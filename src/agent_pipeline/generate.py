@@ -4,14 +4,22 @@ Usage:
     python -m agent_pipeline.generate --client client_01_clean
 """
 
+# standard library
 import argparse
 import json
 import os
 from pathlib import Path
 
+# third party
 from dotenv import load_dotenv
-from openai import OpenAI
 
+# langfuse tracing. without keys it does nothing and the pipeline runs the same
+from langfuse import get_client, observe, propagate_attributes
+# drop in for the openai module that logs every call. langfuse patches it at runtime,
+# which the type checker cannot see, hence the ignore
+from langfuse.openai import openai  # type: ignore[attr-defined]
+
+# document helpers: reading source files and rendering the final markdown
 from document_formatter.formatting import format_document
 from document_formatter.loading import read_file
 
@@ -19,7 +27,7 @@ from document_formatter.loading import read_file
 class ReportGenerator:
     """Builds a report one section at a time from the template config."""
 
-    def __init__(self, openai_client: OpenAI, model: str) -> None:
+    def __init__(self, openai_client: openai.OpenAI, model: str) -> None:
         self._openai = openai_client
         self._model = model
 
@@ -37,8 +45,12 @@ class ReportGenerator:
             )
         return format_document(config, sections)
 
+    # a step in the trace, its output is the yes/no decision.
+    # capture_input=False so the whole client context is not copied into every step
+    @observe(name="check-section-applies", capture_input=False)
     def _section_applies(self, section: dict, context: str, instructions: str) -> bool:
         rule = section.get("use_if", "always")
+        get_client().update_current_span(input={"section": section.get("id"), "use_if": rule})
         if rule == "always":
             return True
         verdict = self._ask(
@@ -47,22 +59,45 @@ class ReportGenerator:
             f"Rule: {rule}\n"
             f"Reply with only 'yes' or 'no'.",
             context,
+            call_name="decide-section-inclusion",
+            call_metadata={"section": section.get("id")},
         )
         return verdict.lower().startswith("y")
 
+    # a step in the trace, the model calls for its placeholders nest inside it
+    @observe(name="build-section", capture_input=False)
     def _build_section(self, section: dict, context: str, instructions: str) -> str:
+        get_client().update_current_span(
+            input={"section": section.get("id"), "template": section["template"]}
+        )
         content = section["template"]
         for name, spec in section.get("placeholders", {}).items():
-            value = self._ask(f"{instructions}\n\n{spec['prompt']}", context)
+            value = self._ask(
+                f"{instructions}\n\n{spec['prompt']}",
+                context,
+                call_name="fill-placeholder",
+                call_metadata={"section": section.get("id"), "placeholder": name},
+            )
             content = content.replace(f"<<{name}>>", value)
         return content
 
-    def _ask(self, instruction: str, context: str) -> str:
-        response = self._openai.chat.completions.create(
+    def _ask(
+        self,
+        instruction: str,
+        context: str,
+        *,
+        call_name: str = "llm-call",  # label for this call in the trace
+        call_metadata: dict | None = None,  # e.g. which section and placeholder it fills
+    ) -> str:
+        response = self._openai.chat.completions.create(  # type: ignore[call-overload]
             model=self._model,
             messages=[
                 {"role": "user", "content": f"{context}\n\n---\n\n{instruction}"}
             ],
+            # name and metadata are read by langfuse and removed before the request
+            # goes to openai, so what the model receives does not change
+            name=call_name,
+            metadata=call_metadata or {},
         )
         return response.choices[0].message.content.strip()
 
@@ -88,13 +123,24 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv()
-    generator = ReportGenerator(OpenAI(), os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
+    generator = ReportGenerator(openai.OpenAI(), os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     client_dir = args.data_dir / args.client
     filenames = sorted(path.name for path in client_dir.iterdir() if path.is_file())
     context = read_client_context(client_dir, filenames)
-    report = generator.generate(config, context)
+
+    # root of the trace: one per report, every step and model call nests under it.
+    # tagged with the client so runs can be filtered per client
+    with get_client().start_as_current_observation(
+        name="generate-report",
+        as_type="chain",
+        input={"client": args.client, "sources": filenames},
+    ) as run, propagate_attributes(trace_name="generate-report", tags=[args.client]):
+        report = generator.generate(config, context)
+        run.update(output=report)
+    # traces are sent in the background, flush so they are not lost when the script exits
+    get_client().flush()
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     out_path = args.output_dir / f"{args.client}.md"
