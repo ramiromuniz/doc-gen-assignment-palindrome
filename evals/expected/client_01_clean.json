@@ -1,0 +1,19 @@
+{
+  "client": "client_01_clean",
+  "sections": [
+    "Introduction",
+    "Background & Objectives",
+    "Recommendations",
+    "Fees & Charges",
+    "Conclusion"
+  ],
+  "accounts_in_scope": ["H-ISA-01"],
+  "key_amounts": ["£20,000", "£52,000"],
+  "must_not_contain": ["£312,000", "Aldgate"],
+  "sources": {
+    "sections": "nothing is sold (report_request: 'Selling existing investments? | No'), so no Tax Implications (template_spec)",
+    "accounts_in_scope": "report_request: 'Accounts covered | Holloway Stocks & Shares ISA' = H-ISA-01 in client_data_db.json; the cash account is the source of funds, not covered",
+    "key_amounts": "£20,000 top-up (meeting_notes, report_request); £52,000 ISA value (client_data_db.json, 30 Apr 2026)",
+    "must_not_contain": "platform_market_update: £312,000 Aldgate Growth Portfolio is an illustrative platform figure, not a client holding"
+  }
+}
