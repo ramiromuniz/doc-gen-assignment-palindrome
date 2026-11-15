@@ -29,7 +29,13 @@
       "template": "Further to our recent discussions, we are writing to set out our advice in relation to <<scope>>. This advice is based on the information currently available to us.\n\nThis firm is authorised and regulated by the Financial Conduct Authority.",
       "placeholders": {
         "scope": {
-          "prompt": "Say which of the client's accounts this report relates to."
+          "prompt": [
+            "Identify the accounts this report covers.",
+            "1. Read the accounts listed in the report request. That list is the scope. Ignore any other accounts the client holds.",
+            "2. Match each one to the client database to confirm its type and who holds it. A joint account counts once.",
+            "3. Return only the names of those accounts as the client would know them (type and owner), as one phrase, e.g. \"your Stocks & Shares ISA\" or \"your ISAs and your joint General Investment Account\".",
+            "Your answer completes the sentence \"we are writing to set out our advice in relation to {your answer}.\", so no figures, no account IDs, no full stop."
+          ]
         }
       }
     },
