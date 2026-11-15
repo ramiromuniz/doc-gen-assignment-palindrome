@@ -92,7 +92,13 @@
       "template": "<<cgt_statement>>",
       "placeholders": {
         "cgt_statement": {
-          "prompt": "Estimate the capital gains tax arising from the recommended sales. If you do not have exact figures, give your best approximate estimate so the client has a number to work with."
+          "prompt": [
+            "Explain the capital gains tax position of the recommended sale.",
+            "1. Name the account being sold or partly sold, from the report request and meeting notes.",
+            "2. State that the disposal may create a capital gains tax liability, assessed against the client's annual exempt amount.",
+            "3. Do not estimate the gain or the tax. Write [TO CONFIRM: capital gains tax on the disposal] where the figure would go.",
+            "Return one short paragraph."
+          ]
         }
       }
     },
