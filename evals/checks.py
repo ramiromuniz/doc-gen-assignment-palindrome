@@ -19,14 +19,25 @@ RISK_WARNING = (
 )
 
 
+# a number like 52,000 or 0.5, and a money or rate figure as written: £52,000 / 0.5% / 6.4 per cent
+NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?"
+FIGURE = re.compile(rf"£\s?{NUMBER}|{NUMBER}\s?(?:%|per cent)")
+
+
 def _flatten(text: str) -> str:
     """Collapse line breaks and repeated spaces so wrapped text still matches."""
     return re.sub(r"\s+", " ", text)
 
 
+def _numbers(text: str) -> set[float]:
+    """Every number in the text as a value, so £52,000, GBP 52,000 and 52000.0 all match."""
+    return {float(n.replace(",", "")) for n in re.findall(NUMBER, text)}
+
+
 # ---------------------------------------------------------------------------
 # tier 1: generic
 # ---------------------------------------------------------------------------
+
 
 def risk_warning_verbatim(*, output: str, **kwargs) -> Evaluation:
     """C1 (critical): the risk warning appears exactly once, word for word."""
@@ -41,6 +52,7 @@ def risk_warning_verbatim(*, output: str, **kwargs) -> Evaluation:
 # ---------------------------------------------------------------------------
 # tier 2: client facts
 # ---------------------------------------------------------------------------
+
 
 def sections_as_expected(
     *, output: str, expected_output: dict | None, **kwargs
@@ -57,4 +69,30 @@ def sections_as_expected(
     )
 
 
-ALL_CHECKS = [risk_warning_verbatim, sections_as_expected]
+def only_approved_figures(
+    *, output: str, expected_output: dict | None, **kwargs
+) -> Evaluation | list:
+    """F5 (critical): every £ or % figure in the report is one a person approved for this client.
+
+    catches any made-up number, e.g. an estimated gain or a fee rate. fee and cgt figures are
+    never on the approved list because a person fills them in (fde_notes).
+    """
+    if not expected_output:
+        return []  # no answer key for this client, skip
+    approved = _numbers(" ".join(expected_output["approved_figures"]))
+    # dict.fromkeys drops repeats but keeps the order they appear in
+    unapproved = list(dict.fromkeys(f for f in FIGURE.findall(output) if not _numbers(f) <= approved))
+    return Evaluation(
+        name="F5_only_approved_figures",
+        value=0.0 if unapproved else 1.0,
+        comment=f"not approved: {unapproved}" if unapproved else "all figures approved",
+    )
+
+
+# all the checks, so the eval runner can call them all in one go.
+# the tier 2 ones are skipped if there is no answer key for this client.
+ALL_CHECKS = [
+    risk_warning_verbatim,
+    sections_as_expected,
+    only_approved_figures,
+]
