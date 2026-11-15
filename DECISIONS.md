@@ -63,6 +63,14 @@ pain point turned into a requirement with acceptance criteria.
   recommendation the older one. That is the case for v2: extract the facts once, as structured
   JSON, and write every section from them.
 
+## D-007 · Model: gpt-4o-mini → gpt-6.1-sol
+- **Why:** what is left is judgement (which value is newer, what is contingent, what was never
+  stated). A stronger reasoning model handles that better, and the next step adds a structured
+  extraction that depends on it.
+- **How it stays fair:** the model is config (`OPENAI_MODEL`), not code. The v1 prompts are run
+  once on the new model before anything else changes, so the model's effect and v2's effect are
+  measured separately. Cost and time are read from Langfuse on every run.
+
 ---
 
 ## Taking it further
