@@ -32,7 +32,7 @@ class ReportGenerator:
         self._model = model
 
     def generate(self, config: dict, context: str) -> str:
-        instructions = config.get("global_instructions", "")
+        instructions = prompt_text(config.get("global_instructions", ""))
         sections = []
         for section in config["sections"]:
             if not self._section_applies(section, context, instructions):
@@ -54,7 +54,7 @@ class ReportGenerator:
         if rule == "always":
             return True
         verdict = self._ask(
-            f"{instructions}\n\n"
+            instructions,
             f"Decide whether this section applies to the client.\n"
             f"Rule: {rule}\n"
             f"Reply with only 'yes' or 'no'.",
@@ -73,7 +73,8 @@ class ReportGenerator:
         content = section["template"]
         for name, spec in section.get("placeholders", {}).items():
             value = self._ask(
-                f"{instructions}\n\n{spec['prompt']}",
+                instructions,
+                prompt_text(spec["prompt"]),
                 context,
                 call_name="fill-placeholder",
                 call_metadata={"section": section.get("id"), "placeholder": name},
@@ -83,16 +84,19 @@ class ReportGenerator:
 
     def _ask(
         self,
-        instruction: str,
-        context: str,
+        instructions: str,  # the standing rules, same for every call
+        task: str,  # what this call must produce
+        context: str,  # the client's source files
         *,
         call_name: str = "llm-call",  # label for this call in the trace
         call_metadata: dict | None = None,  # e.g. which section and placeholder it fills
     ) -> str:
         response = self._openai.chat.completions.create(  # type: ignore[call-overload]
             model=self._model,
+            # rules as the system message, kept apart from the client data and the task
             messages=[
-                {"role": "user", "content": f"{context}\n\n---\n\n{instruction}"}
+                {"role": "system", "content": instructions},
+                {"role": "user", "content": f"{context}\n\n---\n\n{task}"},
             ],
             # name and metadata are read by langfuse and removed before the request
             # goes to openai, so what the model receives does not change
@@ -100,6 +104,11 @@ class ReportGenerator:
             metadata=call_metadata or {},
         )
         return response.choices[0].message.content.strip()
+
+
+def prompt_text(prompt: str | list[str]) -> str:
+    """Prompts in config can be one string or a list of lines (one rule per line reads better in a diff)."""
+    return "\n".join(prompt) if isinstance(prompt, list) else prompt
 
 
 def read_client_context(client_dir: Path, filenames: list[str]) -> str:
@@ -123,11 +132,15 @@ def main() -> None:
     args = parser.parse_args()
 
     load_dotenv()
-    generator = ReportGenerator(openai.OpenAI(), os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
+    generator = ReportGenerator(openai.OpenAI(), os.environ.get("OPENAI_MODEL", "gpt-6.1-sol"))
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     client_dir = args.data_dir / args.client
-    filenames = sorted(path.name for path in client_dir.iterdir() if path.is_file())
+    # only client data reaches the model. guidance for engineers and general material
+    # (listed in config) is skipped; any other file is read, so a new source is never lost
+    skipped = set(config.get("non_client_files", []))
+    filenames = sorted(p.name for p in client_dir.iterdir() if p.is_file() and p.name not in skipped)
+    print(f"Sources used: {filenames}")
     context = read_client_context(client_dir, filenames)
 
     # root of the trace: one per report, every step and model call nests under it.

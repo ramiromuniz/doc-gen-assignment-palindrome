@@ -1,6 +1,27 @@
 {
   "document_title": "Investment Advice Report",
-  "global_instructions": "You are writing sections of a financial advice report addressed to the client. Write in clear British English, in the first person ('we'). Output only the text for the section itself, with no extra headings or commentary.",
+  "non_client_files": ["fde_notes.md", "template_spec.md", "platform_market_update.docx"],
+  "global_instructions": [
+    "You are drafting one part of an investment advice report addressed to the client.",
+    "An adviser and a compliance reviewer check the draft before it is sent.",
+    "",
+    "SOURCES",
+    "- The report request sets the scope: cover only the accounts and the instruction it names.",
+    "- The client database is the system of record for which accounts exist, who holds them and their values. A joint account is listed under each holder but is one account.",
+    "- The meeting notes record what was discussed and what the client decided.",
+    "- If two sources give different figures for the same thing, use the more recent one and say when it was valued.",
+    "- Use only facts about this client from these sources.",
+    "- Never name the internal documents (report request, client database, meeting notes) in the text. The client sees only the advice. Referring to a meeting with the client is fine.",
+    "",
+    "FIGURES",
+    "- Every figure you write must appear in the sources. Never calculate, estimate or round a new figure.",
+    "- Capital gains tax amounts and platform or adviser fee rates are confirmed by a person. Never state them. Instead write a flag in square brackets naming what is needed, e.g. [TO CONFIRM: platform charge].",
+    "",
+    "OUTPUT",
+    "- Clear British English, first person plural (\"we\"), addressed to the client.",
+    "- Return only the text for the part you are asked to write: no headings, no preamble, no notes.",
+    "- Do not add risk warnings or regulatory statements unless asked. The template already has them."
+  ],
   "sections": [
     {
       "id": "introduction",
@@ -9,7 +30,13 @@
       "template": "Further to our recent discussions, we are writing to set out our advice in relation to <<scope>>. This advice is based on the information currently available to us.\n\nThis firm is authorised and regulated by the Financial Conduct Authority.",
       "placeholders": {
         "scope": {
-          "prompt": "Say which of the client's accounts this report relates to."
+          "prompt": [
+            "Identify the accounts this report covers.",
+            "1. Read the accounts listed in the report request. That list is the scope. Ignore any other accounts the client holds.",
+            "2. Match each one to the client database to confirm its type and who holds it. A joint account counts once.",
+            "3. Return only the names of those accounts as the client would know them (type and owner), as one phrase, e.g. \"your Stocks & Shares ISA\" or \"your ISAs and your joint General Investment Account\".",
+            "The phrase is used mid-sentence: lowercase, no figures, no account IDs, no full stop."
+          ]
         }
       }
     },
@@ -20,10 +47,24 @@
       "template": "<<summary>>\n\nThe accounts covered by this report are as follows:\n\n<<holdings_table>>",
       "placeholders": {
         "summary": {
-          "prompt": "Summarise the client's objectives and circumstances."
+          "prompt": [
+            "Summarise the client's objectives and circumstances at a high level.",
+            "1. Take the client's objectives and decisions from the meeting notes, and the headline instruction from the report request.",
+            "2. Write 2 to 4 sentences to the client as \"you\": what you want to achieve and what has prompted this advice.",
+            "3. Keep it high level: no amounts, account values or tax figures. Those belong in later sections.",
+            "Do not list the accounts or introduce a table."
+          ]
         },
         "holdings_table": {
-          "prompt": "List the client's accounts and their values as a markdown table."
+          "prompt": [
+            "Build the table of the accounts this report covers.",
+            "1. Take the accounts listed in the report request. Only those accounts.",
+            "2. For each one, take its ID, owner, type and value from the client database. A joint account is one row, with both owners.",
+            "3. If the meeting notes give a more recent value for an account, use that value. Value is the amount only, written with the account's currency symbol and thousands separators, e.g. £52,000 (pounds unless the database says otherwise).",
+            "4. Leave out any account that does not exist yet, for example a new account still to be opened.",
+            "Return only a markdown table with the columns Account | Owner | Type | Value, where Account is the account ID. One row per account, no total row.",
+            "Start with the table's header row and add nothing before or after it."
+          ]
         }
       }
     },
@@ -34,18 +75,32 @@
       "template": "We recommend the following:\n\n<<recommendation>>",
       "placeholders": {
         "recommendation": {
-          "prompt": "Describe what the client should do with their investments, and why."
+          "prompt": [
+            "Set out what we recommend the client does and why.",
+            "1. Take the decisions from the meeting notes and the headline instruction from the report request.",
+            "2. For each action, say what happens, to which account, the amount involved, and how it meets the client's objectives. Use only amounts stated in the sources: do not work out remainders, totals or differences.",
+            "3. Where a value comes from the meeting notes rather than the client database, say the date it was seen.",
+            "4. Mention any initial charge stated in the report request. For ongoing platform or adviser charges, write [TO CONFIRM: ongoing charges].",
+            "5. If money is expected but not certain yet, say so and do not treat it as available to invest.",
+            "Return only the recommendations, as short paragraphs or a bulleted list, with no heading, introduction or closing remarks."
+          ]
         }
       }
     },
     {
       "id": "tax_implications",
       "title": "Tax Implications",
-      "use_if": "Include this section when the recommendation involves selling investments that could be taxable.",
+      "use_if": "Include this section only if the report request or meeting notes say existing investments are being sold or disposed of. If nothing is being sold, it does not apply.",
       "template": "<<cgt_statement>>",
       "placeholders": {
         "cgt_statement": {
-          "prompt": "Estimate the capital gains tax arising from the recommended sales. If you do not have exact figures, give your best approximate estimate so the client has a number to work with."
+          "prompt": [
+            "Explain the capital gains tax position of the recommended sale.",
+            "1. Name the account being sold or partly sold, from the report request and meeting notes.",
+            "2. State that the disposal may create a capital gains tax liability, assessed against the client's annual exempt amount.",
+            "3. Do not estimate the gain or the tax. Write [TO CONFIRM: capital gains tax on the disposal] where the figure would go.",
+            "Return one short paragraph."
+          ]
         }
       }
     },
@@ -56,7 +111,12 @@
       "template": "<<fees>>",
       "placeholders": {
         "fees": {
-          "prompt": "Set out the ongoing fees and charges that apply to the client's investments."
+          "prompt": [
+            "Set out the fees and charges that apply.",
+            "1. State the initial charge given in the report request, if there is one.",
+            "2. List the ongoing platform charge and the ongoing advice charge. Their rates are confirmed by a person: write [TO CONFIRM: platform charge] and [TO CONFIRM: ongoing advice charge].",
+            "Return one short paragraph or a short bulleted list."
+          ]
         }
       }
     },
@@ -64,12 +124,8 @@
       "id": "conclusion",
       "title": "Conclusion",
       "use_if": "always",
-      "template": "<<risk_warning>>\n\nIf you are happy to proceed with our recommendations, please let us know and we will implement them for you.",
-      "placeholders": {
-        "risk_warning": {
-          "prompt": "Add the standard risk warning about investments."
-        }
-      }
+      "template": "The value of investments can fall as well as rise and you may get back less than you invest. Past performance is not a guide to future returns.\n\nIf you are happy to proceed with our recommendations, please let us know and we will implement them for you.",
+      "placeholders": {}
     }
   ]
 }
