@@ -24,7 +24,7 @@ from document_formatter.formatting import format_document
 from document_formatter.loading import read_file
 
 # pipeline steps
-from agent_pipeline.extract import check_facts, extract_facts
+from agent_pipeline.extract import Facts, check_facts, extract_facts
 
 # the system of record for which accounts exist, who holds them and their values (fde_notes)
 DATABASE_FILE = "client_data_db.json"
@@ -37,7 +37,7 @@ class ReportGenerator:
         self._openai = openai_client
         self._model = model
 
-    def generate(self, config: dict, context: str) -> str:
+    def generate(self, config: dict, context: str, facts: Facts) -> str:
         # writers get the shared rules plus how to write for the client
         instructions = (
             prompt_text(config.get("global_instructions", ""))
@@ -46,7 +46,7 @@ class ReportGenerator:
         )
         sections = []
         for section in config["sections"]:
-            if not self._section_applies(section, context, instructions):
+            if not self._section_applies(section, facts):
                 continue
             sections.append(
                 {
@@ -56,24 +56,16 @@ class ReportGenerator:
             )
         return format_document(config, sections)
 
-    # a step in the trace, its output is the yes/no decision.
-    # capture_input=False so the whole client context is not copied into every step
+    # a step in the trace, its output is the yes/no decision
     @observe(name="check-section-applies", capture_input=False)
-    def _section_applies(self, section: dict, context: str, instructions: str) -> bool:
+    def _section_applies(self, section: dict, facts: Facts) -> bool:
         rule = section.get("use_if", "always")
         get_client().update_current_span(input={"section": section.get("id"), "use_if": rule})
         if rule == "always":
             return True
-        verdict = self._ask(
-            instructions,
-            f"Decide whether this section applies to the client.\n"
-            f"Rule: {rule}\n"
-            f"Reply with only 'yes' or 'no'.",
-            context,
-            call_name="decide-section-inclusion",
-            call_metadata={"section": section.get("id")},
-        )
-        return verdict.lower().startswith("y")
+        # the rule names a yes/no fact, e.g. "selling_investments", decided once at
+        # extraction. no model call here; a rule naming no fact fails loudly
+        return bool(getattr(facts, rule))
 
     # a step in the trace, the model calls for its placeholders nest inside it
     @observe(name="build-section", capture_input=False)
@@ -179,7 +171,7 @@ def main() -> None:
         for note in review_notes:
             print(f"Review: {note}")
         # step 3: write the report. the sections still read the raw files for now
-        report = None if args.facts_only else generator.generate(config, context)
+        report = None if args.facts_only else generator.generate(config, context, facts)
         run.update(output=report or facts.model_dump(), metadata={"review_notes": review_notes})
     # traces are sent in the background, flush so they are not lost when the script exits
     get_client().flush()

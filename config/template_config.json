@@ -101,7 +101,7 @@
     {
       "id": "tax_implications",
       "title": "Tax Implications",
-      "use_if": "Include this section only if the report request or meeting notes say existing investments are being sold or disposed of. If nothing is being sold, it does not apply.",
+      "use_if": "selling_investments",
       "template": "<<cgt_statement>>",
       "placeholders": {
         "cgt_statement": {
