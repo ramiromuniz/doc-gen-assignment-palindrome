@@ -109,7 +109,12 @@
       "template": "<<fees>>",
       "placeholders": {
         "fees": {
-          "prompt": "Set out the ongoing fees and charges that apply to the client's investments."
+          "prompt": [
+            "Set out the fees and charges that apply.",
+            "1. State the initial charge given in the report request, if there is one.",
+            "2. List the ongoing platform charge and the ongoing advice charge. Their rates are confirmed by a person: write [TO CONFIRM: platform charge] and [TO CONFIRM: ongoing advice charge].",
+            "Return one short paragraph or a short bulleted list."
+          ]
         }
       }
     },
