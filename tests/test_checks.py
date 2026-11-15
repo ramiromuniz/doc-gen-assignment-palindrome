@@ -7,6 +7,7 @@ from evals.checks import (
     FCA_LINE,
     RISK_WARNING,
     fca_line_verbatim,
+    no_leftover_slots,
     only_approved_figures,
     risk_warning_verbatim,
     sections_as_expected,
@@ -38,6 +39,18 @@ def test_fca_line_passes_when_present_once():
 
 def test_fca_line_fails_when_paraphrased():
     assert fca_line_verbatim(output="We are regulated by the FCA.").value == 0.0
+
+
+# C3 leftover slots
+
+def test_slots_pass_when_all_filled():
+    assert no_leftover_slots(output="Advice in relation to your ISA.").value == 1.0
+
+
+def test_slots_fail_when_one_is_left():
+    result = no_leftover_slots(output="Advice in relation to <<scope>>.")
+    assert result.value == 0.0
+    assert "<<scope>>" in result.comment
 
 
 # F2 sections

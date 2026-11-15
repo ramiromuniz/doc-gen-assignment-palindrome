@@ -25,6 +25,9 @@ FCA_LINE = "This firm is authorised and regulated by the Financial Conduct Autho
 NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?"  # 52,000 or 0.5
 FIGURE = re.compile(rf"£\s?{NUMBER}|{NUMBER}\s?(?:%|per cent)")
 
+# a template slot the model was meant to fill, e.g. <<scope>>
+SLOT = re.compile(r"<<[^<>]+>>")
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -64,6 +67,16 @@ def risk_warning_verbatim(*, output: str, **kwargs) -> Evaluation:
 def fca_line_verbatim(*, output: str, **kwargs) -> Evaluation:
     """C2 (critical): the FCA line appears exactly once, word for word."""
     return _verbatim_once(output, FCA_LINE, "C2_fca_line")
+
+
+def no_leftover_slots(*, output: str, **kwargs) -> Evaluation:
+    """C3 (critical): no <<slot>> is left unfilled, so the client never sees template residue."""
+    leftovers = SLOT.findall(output)
+    return Evaluation(
+        name="C3_no_leftover_slots",
+        value=0.0 if leftovers else 1.0,
+        comment=f"left unfilled: {leftovers}" if leftovers else "all slots filled",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -113,6 +126,7 @@ def only_approved_figures(
 ALL_CHECKS = [
     risk_warning_verbatim,
     fca_line_verbatim,
+    no_leftover_slots,
     sections_as_expected,
     only_approved_figures,
 ]
