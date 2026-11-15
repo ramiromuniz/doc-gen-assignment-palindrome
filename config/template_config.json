@@ -55,7 +55,14 @@
           ]
         },
         "holdings_table": {
-          "prompt": "List the client's accounts and their values as a markdown table."
+          "prompt": [
+            "Build the table of the accounts this report covers.",
+            "1. Take the accounts listed in the report request. Only those accounts.",
+            "2. For each one, take its ID, owner, type and value from the client database. A joint account is one row, with both owners.",
+            "3. If the meeting notes give a more recent value for an account, use that value. Value is the amount only.",
+            "4. Leave out any account that does not exist yet, for example a new account still to be opened.",
+            "Return only a markdown table with the columns Account | Owner | Type | Value, where Account is the account ID. One row per account, no total row, nothing before or after it."
+          ]
         }
       }
     },
