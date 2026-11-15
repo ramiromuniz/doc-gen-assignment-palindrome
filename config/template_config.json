@@ -49,7 +49,7 @@
           "prompt": [
             "Summarise the client's objectives and circumstances at a high level.",
             "1. Take the client's objectives and decisions from the meeting notes, and the headline instruction from the report request.",
-            "2. Write 2 to 4 sentences: what the client wants to achieve and what has prompted this advice.",
+            "2. Write 2 to 4 sentences to the client as \"you\": what you want to achieve and what has prompted this advice.",
             "3. Keep it high level: no amounts, account values or tax figures. Those belong in later sections.",
             "Your answer is followed by \"The accounts covered by this report are as follows:\" and a table, so do not list the accounts."
           ]
