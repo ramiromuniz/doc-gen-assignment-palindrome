@@ -6,6 +6,7 @@ written from these facts, so every section uses the same accounts, values and am
 
 # standard library
 import re
+from typing import Literal
 
 # third party
 from langfuse.openai import openai  # type: ignore[attr-defined]
@@ -25,8 +26,9 @@ class Account(BaseModel):
         description="the most recent value of the account in the sources"
     )
     value_date: str = Field(description="the date of that value, YYYY-MM-DD")
-    value_source: str = Field(
-        description="where that value comes from: client database or meeting notes"
+    # a fixed choice, not free text: code reads this field, so the schema limits its values
+    value_source: Literal["client database", "meeting notes", "other source"] = Field(
+        description="where that value comes from"
     )
 
 
