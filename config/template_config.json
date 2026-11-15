@@ -11,6 +11,7 @@
     "- The meeting notes record what was discussed and what the client decided.",
     "- If two sources give different figures for the same thing, use the more recent one and say when it was valued.",
     "- Use only facts about this client from these sources.",
+    "- Never name the internal documents (report request, client database, meeting notes) in the text. The client sees only the advice. Referring to a meeting with the client is fine.",
     "",
     "FIGURES",
     "- Every figure you write must appear in the sources. Never calculate, estimate or round a new figure.",
