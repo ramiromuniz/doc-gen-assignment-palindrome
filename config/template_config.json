@@ -88,7 +88,7 @@
     {
       "id": "tax_implications",
       "title": "Tax Implications",
-      "use_if": "Include this section when the recommendation involves selling investments that could be taxable.",
+      "use_if": "Include this section only if the report request or meeting notes say existing investments are being sold or disposed of. If nothing is being sold, it does not apply.",
       "template": "<<cgt_statement>>",
       "placeholders": {
         "cgt_statement": {
