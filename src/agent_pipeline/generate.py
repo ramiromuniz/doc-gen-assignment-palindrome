@@ -32,7 +32,7 @@ class ReportGenerator:
         self._model = model
 
     def generate(self, config: dict, context: str) -> str:
-        instructions = config.get("global_instructions", "")
+        instructions = prompt_text(config.get("global_instructions", ""))
         sections = []
         for section in config["sections"]:
             if not self._section_applies(section, context, instructions):
@@ -74,7 +74,7 @@ class ReportGenerator:
         for name, spec in section.get("placeholders", {}).items():
             value = self._ask(
                 instructions,
-                spec["prompt"],
+                prompt_text(spec["prompt"]),
                 context,
                 call_name="fill-placeholder",
                 call_metadata={"section": section.get("id"), "placeholder": name},
@@ -104,6 +104,11 @@ class ReportGenerator:
             metadata=call_metadata or {},
         )
         return response.choices[0].message.content.strip()
+
+
+def prompt_text(prompt: str | list[str]) -> str:
+    """Prompts in config can be one string or a list of lines (one rule per line reads better in a diff)."""
+    return "\n".join(prompt) if isinstance(prompt, list) else prompt
 
 
 def read_client_context(client_dir: Path, filenames: list[str]) -> str:
