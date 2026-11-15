@@ -14,7 +14,7 @@
     "",
     "FIGURES",
     "- Every figure you write must appear in the sources. Never calculate, estimate or round a new figure.",
-    "- Capital gains tax amounts and platform or adviser fee rates are confirmed by a person. Never state them. Write [TO CONFIRM: <what is needed>] instead.",
+    "- Capital gains tax amounts and platform or adviser fee rates are confirmed by a person. Never state them. Instead write a flag in square brackets naming what is needed, e.g. [TO CONFIRM: platform charge].",
     "",
     "OUTPUT",
     "- Clear British English, first person plural (\"we\"), addressed to the client.",
@@ -34,7 +34,7 @@
             "1. Read the accounts listed in the report request. That list is the scope. Ignore any other accounts the client holds.",
             "2. Match each one to the client database to confirm its type and who holds it. A joint account counts once.",
             "3. Return only the names of those accounts as the client would know them (type and owner), as one phrase, e.g. \"your Stocks & Shares ISA\" or \"your ISAs and your joint General Investment Account\".",
-            "Your answer completes the sentence \"we are writing to set out our advice in relation to {your answer}.\", so no figures, no account IDs, no full stop."
+            "The phrase is used mid-sentence: lowercase, no figures, no account IDs, no full stop."
           ]
         }
       }
@@ -51,7 +51,7 @@
             "1. Take the client's objectives and decisions from the meeting notes, and the headline instruction from the report request.",
             "2. Write 2 to 4 sentences to the client as \"you\": what you want to achieve and what has prompted this advice.",
             "3. Keep it high level: no amounts, account values or tax figures. Those belong in later sections.",
-            "Your answer is followed by \"The accounts covered by this report are as follows:\" and a table, so do not list the accounts."
+            "Do not list the accounts or introduce a table."
           ]
         },
         "holdings_table": {
@@ -62,7 +62,7 @@
             "3. If the meeting notes give a more recent value for an account, use that value. Value is the amount only, written with the account's currency symbol and thousands separators, e.g. £52,000 (pounds unless the database says otherwise).",
             "4. Leave out any account that does not exist yet, for example a new account still to be opened.",
             "Return only a markdown table with the columns Account | Owner | Type | Value, where Account is the account ID. One row per account, no total row.",
-            "The sentence introducing the table is already in the report: start directly with the table's header row and add nothing before or after it."
+            "Start with the table's header row and add nothing before or after it."
           ]
         }
       }
@@ -78,10 +78,10 @@
             "Set out what we recommend the client does and why.",
             "1. Take the decisions from the meeting notes and the headline instruction from the report request.",
             "2. For each action, say what happens, to which account, the amount involved, and how it meets the client's objectives. Use only amounts stated in the sources: do not work out remainders, totals or differences.",
-            "3. Where a value comes from the meeting notes rather than the client database, say when it was seen, e.g. \"valued at around £X at our meeting on <date>\".",
-            "4. Mention any initial charge stated in the report request. For ongoing platform or adviser charges, write [TO CONFIRM: <charge>].",
+            "3. Where a value comes from the meeting notes rather than the client database, say the date it was seen.",
+            "4. Mention any initial charge stated in the report request. For ongoing platform or adviser charges, write [TO CONFIRM: ongoing charges].",
             "5. If money is expected but not certain yet, say so and do not treat it as available to invest.",
-            "\"We recommend the following:\" is already in the report: start directly with the first recommendation and do not repeat it. Use short paragraphs or a bulleted list, and end after the last recommendation with no closing remarks."
+            "Return only the recommendations, as short paragraphs or a bulleted list, with no heading, introduction or closing remarks."
           ]
         }
       }
