@@ -54,7 +54,7 @@ class ReportGenerator:
         if rule == "always":
             return True
         verdict = self._ask(
-            f"{instructions}\n\n"
+            instructions,
             f"Decide whether this section applies to the client.\n"
             f"Rule: {rule}\n"
             f"Reply with only 'yes' or 'no'.",
@@ -73,7 +73,8 @@ class ReportGenerator:
         content = section["template"]
         for name, spec in section.get("placeholders", {}).items():
             value = self._ask(
-                f"{instructions}\n\n{spec['prompt']}",
+                instructions,
+                spec["prompt"],
                 context,
                 call_name="fill-placeholder",
                 call_metadata={"section": section.get("id"), "placeholder": name},
@@ -83,16 +84,19 @@ class ReportGenerator:
 
     def _ask(
         self,
-        instruction: str,
-        context: str,
+        instructions: str,  # the standing rules, same for every call
+        task: str,  # what this call must produce
+        context: str,  # the client's source files
         *,
         call_name: str = "llm-call",  # label for this call in the trace
         call_metadata: dict | None = None,  # e.g. which section and placeholder it fills
     ) -> str:
         response = self._openai.chat.completions.create(  # type: ignore[call-overload]
             model=self._model,
+            # rules as the system message, kept apart from the client data and the task
             messages=[
-                {"role": "user", "content": f"{context}\n\n---\n\n{instruction}"}
+                {"role": "system", "content": instructions},
+                {"role": "user", "content": f"{context}\n\n---\n\n{task}"},
             ],
             # name and metadata are read by langfuse and removed before the request
             # goes to openai, so what the model receives does not change
