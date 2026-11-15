@@ -12,21 +12,38 @@ import re
 # third party
 from langfuse import Evaluation
 
-# mandatory wording, word for word, from template_spec.md (Conclusion)
+# mandatory wording, must appear word for word
+# risk warning: from template_spec.md (Conclusion)
 RISK_WARNING = (
     "The value of investments can fall as well as rise and you may get back less than you invest. "
     "Past performance is not a guide to future returns."
 )
+# fca line: static text in config/template_config.json (Introduction), fde_notes: never paraphrased
+FCA_LINE = "This firm is authorised and regulated by the Financial Conduct Authority."
 
-
-# a number like 52,000 or 0.5, and a money or rate figure as written: £52,000 / 0.5% / 6.4 per cent
-NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?"
+# figures in a report: money and rates, e.g. £52,000 / 0.5% / 6.4 per cent
+NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?"  # 52,000 or 0.5
 FIGURE = re.compile(rf"£\s?{NUMBER}|{NUMBER}\s?(?:%|per cent)")
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
 
 
 def _flatten(text: str) -> str:
     """Collapse line breaks and repeated spaces so wrapped text still matches."""
     return re.sub(r"\s+", " ", text)
+
+
+def _verbatim_once(output: str, wording: str, name: str) -> Evaluation:
+    """Pass if the exact wording appears once: missing, paraphrased or repeated all fail."""
+    count = _flatten(output).count(wording)
+    return Evaluation(
+        name=name,
+        value=1.0 if count == 1 else 0.0,
+        comment=f"found {count} times, expected 1",
+    )
 
 
 def _numbers(text: str) -> set[float]:
@@ -41,12 +58,12 @@ def _numbers(text: str) -> set[float]:
 
 def risk_warning_verbatim(*, output: str, **kwargs) -> Evaluation:
     """C1 (critical): the risk warning appears exactly once, word for word."""
-    count = _flatten(output).count(RISK_WARNING)
-    return Evaluation(
-        name="C1_risk_warning",
-        value=1.0 if count == 1 else 0.0,
-        comment=f"found {count} times, expected 1",
-    )
+    return _verbatim_once(output, RISK_WARNING, "C1_risk_warning")
+
+
+def fca_line_verbatim(*, output: str, **kwargs) -> Evaluation:
+    """C2 (critical): the FCA line appears exactly once, word for word."""
+    return _verbatim_once(output, FCA_LINE, "C2_fca_line")
 
 
 # ---------------------------------------------------------------------------
@@ -81,7 +98,9 @@ def only_approved_figures(
         return []  # no answer key for this client, skip
     approved = _numbers(" ".join(expected_output["approved_figures"]))
     # dict.fromkeys drops repeats but keeps the order they appear in
-    unapproved = list(dict.fromkeys(f for f in FIGURE.findall(output) if not _numbers(f) <= approved))
+    unapproved = list(
+        dict.fromkeys(f for f in FIGURE.findall(output) if not _numbers(f) <= approved)
+    )
     return Evaluation(
         name="F5_only_approved_figures",
         value=0.0 if unapproved else 1.0,
@@ -93,6 +112,7 @@ def only_approved_figures(
 # the tier 2 ones are skipped if there is no answer key for this client.
 ALL_CHECKS = [
     risk_warning_verbatim,
+    fca_line_verbatim,
     sections_as_expected,
     only_approved_figures,
 ]

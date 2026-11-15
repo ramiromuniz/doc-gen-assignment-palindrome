@@ -4,7 +4,9 @@ each test feeds a tiny made-up report into one check and confirms pass or fail.
 """
 
 from evals.checks import (
+    FCA_LINE,
     RISK_WARNING,
+    fca_line_verbatim,
     only_approved_figures,
     risk_warning_verbatim,
     sections_as_expected,
@@ -26,6 +28,16 @@ def test_risk_warning_passes_when_wrapped_across_lines():
 def test_risk_warning_fails_when_missing_or_repeated():
     assert risk_warning_verbatim(output="No warning here.").value == 0.0
     assert risk_warning_verbatim(output=f"{RISK_WARNING} {RISK_WARNING}").value == 0.0
+
+
+# C2 FCA line
+
+def test_fca_line_passes_when_present_once():
+    assert fca_line_verbatim(output=f"Intro.\n\n{FCA_LINE}").value == 1.0
+
+
+def test_fca_line_fails_when_paraphrased():
+    assert fca_line_verbatim(output="We are regulated by the FCA.").value == 0.0
 
 
 # F2 sections
