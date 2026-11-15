@@ -23,6 +23,9 @@ from langfuse.openai import openai  # type: ignore[attr-defined]
 from document_formatter.formatting import format_document
 from document_formatter.loading import read_file
 
+# pipeline steps
+from agent_pipeline.extract import extract_facts
+
 
 class ReportGenerator:
     """Builds a report one section at a time from the template config."""
@@ -32,7 +35,12 @@ class ReportGenerator:
         self._model = model
 
     def generate(self, config: dict, context: str) -> str:
-        instructions = prompt_text(config.get("global_instructions", ""))
+        # writers get the shared rules plus how to write for the client
+        instructions = (
+            prompt_text(config.get("global_instructions", ""))
+            + "\n\n"
+            + prompt_text(config.get("writing_instructions", ""))
+        )
         sections = []
         for section in config["sections"]:
             if not self._section_applies(section, context, instructions):
@@ -129,10 +137,13 @@ def main() -> None:
         "--config", type=Path, default=Path("config/template_config.json")
     )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
+    parser.add_argument("--facts-only", action="store_true", help="stop after extracting the facts")
     args = parser.parse_args()
 
     load_dotenv()
-    generator = ReportGenerator(openai.OpenAI(), os.environ.get("OPENAI_MODEL", "gpt-6.1-sol"))
+    openai_client = openai.OpenAI()
+    model = os.environ.get("OPENAI_MODEL", "gpt-6.1-sol")
+    generator = ReportGenerator(openai_client, model)
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     client_dir = args.data_dir / args.client
@@ -150,12 +161,29 @@ def main() -> None:
         as_type="chain",
         input={"client": args.client, "sources": filenames},
     ) as run, propagate_attributes(trace_name="generate-report", tags=[args.client]):
-        report = generator.generate(config, context)
-        run.update(output=report)
+        # step 1: decide the facts of the case once. only the shared rules: facts are
+        # neutral notes, how to write for the client is the writers' job
+        facts = extract_facts(
+            openai_client,
+            model,
+            prompt_text(config["global_instructions"]),
+            prompt_text(config["extraction_prompt"]),
+            context,
+        )
+        # step 2: write the report. the sections still read the raw files for now
+        report = None if args.facts_only else generator.generate(config, context)
+        run.update(output=report or facts.model_dump())
     # traces are sent in the background, flush so they are not lost when the script exits
     get_client().flush()
 
+    # the facts are saved next to the report: what the report was written from, for audit
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    facts_path = args.output_dir / f"{args.client}.facts.json"
+    facts_path.write_text(facts.model_dump_json(indent=2), encoding="utf-8")
+    print(f"Wrote {facts_path}")
+    if report is None:
+        return
+
     out_path = args.output_dir / f"{args.client}.md"
     out_path.write_text(report, encoding="utf-8")
     print(f"Wrote {out_path}")

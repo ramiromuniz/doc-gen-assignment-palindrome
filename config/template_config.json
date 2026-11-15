@@ -2,25 +2,35 @@
   "document_title": "Investment Advice Report",
   "non_client_files": ["fde_notes.md", "template_spec.md", "platform_market_update.docx"],
   "global_instructions": [
-    "You are drafting one part of an investment advice report addressed to the client.",
-    "An adviser and a compliance reviewer check the draft before it is sent.",
+    "You are working on an investment advice report for a client of a regulated firm.",
+    "An adviser and a compliance reviewer check it before it is sent.",
     "",
     "SOURCES",
     "- The report request sets the scope: cover only the accounts and the instruction it names.",
     "- The client database is the system of record for which accounts exist, who holds them and their values. A joint account is listed under each holder but is one account.",
     "- The meeting notes record what was discussed and what the client decided.",
-    "- If two sources give different figures for the same thing, use the more recent one and say when it was valued.",
+    "- If two sources give different figures for the same thing, use the more recent one.",
     "- Use only facts about this client from these sources.",
-    "- Never name the internal documents (report request, client database, meeting notes) in the text. The client sees only the advice. Referring to a meeting with the client is fine.",
     "",
     "FIGURES",
-    "- Every figure you write must appear in the sources. Never calculate, estimate or round a new figure.",
-    "- Capital gains tax amounts and platform or adviser fee rates are confirmed by a person. Never state them. Instead write a flag in square brackets naming what is needed, e.g. [TO CONFIRM: platform charge].",
-    "",
-    "OUTPUT",
-    "- Clear British English, first person plural (\"we\"), addressed to the client.",
+    "- Every figure must appear in the sources. Never calculate, estimate or round a new figure.",
+    "- Capital gains tax amounts and the ongoing platform and advice charge rates are confirmed by a person, never stated by us. The initial charge stated in the report request is a given fact."
+  ],
+  "writing_instructions": [
+    "You are drafting one part of the report, addressed to the client.",
+    "- Clear British English, first person plural (\"we\").",
+    "- Never name the internal documents (report request, client database, meeting notes) in the text. The client sees only the advice. Referring to a meeting with the client is fine.",
+    "- Where a figure is confirmed by a person, write a flag in square brackets naming what is needed, e.g. [TO CONFIRM: platform charge].",
     "- Return only the text for the part you are asked to write: no headings, no preamble, no notes.",
     "- Do not add risk warnings or regulatory statements unless asked. The template already has them."
+  ],
+  "extraction_prompt": [
+    "Extract the facts of this client's case, as plain notes for the adviser, not text for the client.",
+    "1. Accounts in scope: only the accounts the report request covers, each matched to its id in the client database. A joint account is listed under each holder but counts once. Leave out accounts that do not exist yet.",
+    "2. Values: if the meeting notes give a more recent value than the client database, use it.",
+    "3. Situation: the client's circumstances only.",
+    "4. Actions: what happens to the client's money or accounts, not admin steps. Give an amount only if the sources state it. Never calculate or estimate one: use null.",
+    "5. To confirm: missing amounts, money that is expected but not certain, balances to check, capital gains tax and ongoing charges, each as a short phrase."
   ],
   "sections": [
     {
