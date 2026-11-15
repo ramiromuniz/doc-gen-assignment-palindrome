@@ -4,6 +4,9 @@ one model call reads the client files and fills a fixed schema. the sections are
 written from these facts, so every section uses the same accounts, values and amounts.
 """
 
+# standard library
+import re
+
 # third party
 from langfuse.openai import openai  # type: ignore[attr-defined]
 from pydantic import BaseModel, Field
@@ -80,3 +83,73 @@ def extract_facts(
     if message.parsed is None:
         raise ValueError(f"fact extraction failed: {message.refusal}")
     return message.parsed
+
+
+# checking the facts: the model proposes, code verifies before anything is written
+
+# a number in a text, e.g. 45,000 or 0.5
+NUMBER = re.compile(r"\d+(?:,\d{3})*(?:\.\d+)?")
+
+
+def _numbers(text: str) -> set[float]:
+    """Every number in a text: '£45,000 and 0.5%' -> {45000.0, 0.5}."""
+    return {float(n.replace(",", "")) for n in NUMBER.findall(text)}
+
+
+def check_facts(facts: Facts, db: dict, sources: str) -> tuple[Facts, list[str]]:
+    """Check the facts against the client database and the source text.
+
+    what can be corrected safely is corrected, the rest is removed. every change is
+    returned as a review note, so a person can see what the model got wrong.
+    """
+    # every account in the db by id. a joint account listed under both holders is one entry
+    db_accounts = {
+        account["account_id"]: account
+        for holder in db["holders"].values()
+        for account in holder["accounts"]
+    }
+    source_numbers = _numbers(sources)
+    notes = []
+
+    # accounts: must exist, be open, have a value, appear once
+    accounts = []
+    for account in facts.accounts_in_scope:
+        record = db_accounts.get(account.account_id)
+        if record is None:
+            notes.append(f"{account.account_id}: not in the client database, removed")
+            continue
+        if record.get("status") != "open" or record.get("value") is None:
+            notes.append(f"{account.account_id}: closed or no value in the client database, removed")
+            continue
+        if account.account_id in {kept.account_id for kept in accounts}:
+            continue  # joint account returned twice, already kept once
+        # the value must be the db value or appear in a source, otherwise use the db value
+        if account.value != record["value"] and account.value not in source_numbers:
+            notes.append(f"{account.account_id}: value {account.value:,.0f} not in the sources, database value used")
+            account = account.model_copy(
+                update={
+                    "value": record["value"],
+                    "value_date": record["valuation_date"],
+                    "value_source": "client database",
+                }
+            )
+        accounts.append(account)
+
+    # amounts: every number in an amount must appear in a source, otherwise null
+    actions = []
+    for action in facts.actions:
+        if action.amount and not _numbers(action.amount) <= source_numbers:
+            notes.append(f"amount '{action.amount}' not in the sources, set to null: {action.action}")
+            action = action.model_copy(update={"amount": None})
+        actions.append(action)
+
+    # the initial charge, same rule
+    initial_charge = facts.initial_charge
+    if initial_charge and not _numbers(initial_charge) <= source_numbers:
+        notes.append(f"initial charge '{initial_charge}' not in the sources, set to null")
+        initial_charge = None
+
+    checked = facts.model_copy(
+        update={"accounts_in_scope": accounts, "actions": actions, "initial_charge": initial_charge}
+    )
+    return checked, notes

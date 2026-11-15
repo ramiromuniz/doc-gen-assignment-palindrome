@@ -24,7 +24,10 @@ from document_formatter.formatting import format_document
 from document_formatter.loading import read_file
 
 # pipeline steps
-from agent_pipeline.extract import extract_facts
+from agent_pipeline.extract import check_facts, extract_facts
+
+# the system of record for which accounts exist, who holds them and their values (fde_notes)
+DATABASE_FILE = "client_data_db.json"
 
 
 class ReportGenerator:
@@ -170,16 +173,22 @@ def main() -> None:
             prompt_text(config["extraction_prompt"]),
             context,
         )
-        # step 2: write the report. the sections still read the raw files for now
+        # step 2: check the facts against the client database and the sources, in code
+        db = json.loads((client_dir / DATABASE_FILE).read_text(encoding="utf-8"))
+        facts, review_notes = check_facts(facts, db, context)
+        for note in review_notes:
+            print(f"Review: {note}")
+        # step 3: write the report. the sections still read the raw files for now
         report = None if args.facts_only else generator.generate(config, context)
-        run.update(output=report or facts.model_dump())
+        run.update(output=report or facts.model_dump(), metadata={"review_notes": review_notes})
     # traces are sent in the background, flush so they are not lost when the script exits
     get_client().flush()
 
-    # the facts are saved next to the report: what the report was written from, for audit
+    # the facts are saved next to the report with what code corrected: for audit
     args.output_dir.mkdir(parents=True, exist_ok=True)
     facts_path = args.output_dir / f"{args.client}.facts.json"
-    facts_path.write_text(facts.model_dump_json(indent=2), encoding="utf-8")
+    saved = {"facts": facts.model_dump(), "review_notes": review_notes}
+    facts_path.write_text(json.dumps(saved, indent=2, ensure_ascii=False), encoding="utf-8")
     print(f"Wrote {facts_path}")
     if report is None:
         return
