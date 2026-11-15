@@ -127,7 +127,11 @@ def main() -> None:
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     client_dir = args.data_dir / args.client
-    filenames = sorted(path.name for path in client_dir.iterdir() if path.is_file())
+    # only client data reaches the model. guidance for engineers and general material
+    # (listed in config) is skipped; any other file is read, so a new source is never lost
+    skipped = set(config.get("non_client_files", []))
+    filenames = sorted(p.name for p in client_dir.iterdir() if p.is_file() and p.name not in skipped)
+    print(f"Sources used: {filenames}")
     context = read_client_context(client_dir, filenames)
 
     # root of the trace: one per report, every step and model call nests under it.
