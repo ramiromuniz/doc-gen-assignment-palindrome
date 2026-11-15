@@ -30,6 +30,23 @@ pain point turned into a requirement with acceptance criteria.
   firm, self-host in their Azure tenant or mask personal data, and tag each trace with the release
   that produced it.
 
+## D-005 · Eval v0: "correct" written down as code checks
+- **Why:** the baseline reports look plausible. Without a scorecard there is no way to prove a fix
+  worked, or that it broke nothing else.
+- **What:** 6 critical checks in plain Python, no model calls, so free and the same answer every
+  run. Langfuse experiments run them and keep the history.
+  - Generic, any client including held-out: risk warning and FCA line word for word once, no
+    unfilled `<<slots>>`.
+  - Against a hand-written answer key per client: the right sections, exactly the accounts in
+    scope in the table, no figure outside the approved list.
+- **Invented figures:** checked against figures a person approved, since fee and CGT figures are
+  set by a person anyway (fde_notes). Keyword rules were too brittle.
+- **Left out on purpose:** a "must not contain" word list only catches what you predicted.
+  Irrelevant files get fixed at ingestion, irrelevant content goes to an LLM judge later.
+  Quality checks (repetition, structure) wait until the pipeline outputs JSON.
+- **Gap:** clients without an answer key only get the generic checks. An LLM judge for
+  groundedness and relevance closes that later.
+
 ---
 
 ## Taking it further

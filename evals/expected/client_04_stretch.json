@@ -1,0 +1,23 @@
+{
+  "client": "client_04_stretch",
+  "sections": [
+    "Introduction",
+    "Background & Objectives",
+    "Recommendations",
+    "Tax Implications",
+    "Fees & Charges",
+    "Conclusion"
+  ],
+  "accounts_in_scope": ["H4-ISA-J", "H4-ISA-C", "H4-GIA-HJ", "B4-SIPP-J", "B4-SIPP-C", "B4-GIA-J", "M4-BOND-J"],
+  "key_amounts": ["£850,000", "£200,000", "£255,000"],
+  "approved_figures": [
+    "£85,000", "£82,000", "£240,000", "£255,000", "£610,000", "£430,000", "£95,000", "£180,000",
+    "£850,000", "£200,000", "£400,000", "0.5%"
+  ],
+  "sources": {
+    "sections": "part of the Holloway joint GIA is sold (report_request: 'Selling existing investments? | Yes (partial rebalance of the Holloway joint GIA)'), so Tax Implications is included (template_spec)",
+    "accounts_in_scope": "report_request: Holloway ISAs, Brightwell SIPPs, both joint GIAs (Holloway and Brightwell), the Meridian offshore bond, plus a new joint account. joint accounts are listed under both holders in client_data_db.json but are one account each. the new joint account does not exist yet (no id, no value), so it belongs in Recommendations, not the holdings table. the Meridian cash accounts are not in the request, M4-OLD-C is closed and 'can be disregarded' (meeting_notes)",
+    "key_amounts": "£850,000 completion payment, £200,000 of it committed to repaying a bridging loan (meeting_notes, 20 May 2026). the Holloway joint GIA is partly sold, so its latest value must appear: around £255,000 seen live at the meeting (db: £240,000 struck 28 Feb 2026)",
+    "approved_figures": "every figure the report may use: in-scope account values from client_data_db.json, both Holloway GIA values, the £850,000 completion payment, the £200,000 loan repayment, the up to £400,000 earnout (contingent, not guaranteed, must not be treated as money to invest), the 0.5% initial charge from report_request. no fee rates, cgt figures, pension contribution amounts, isa allowances or derived totals, a person adds those (fde_notes)"
+  }
+}

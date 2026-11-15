@@ -1,0 +1,20 @@
+{
+  "client": "client_02_medium",
+  "sections": [
+    "Introduction",
+    "Background & Objectives",
+    "Recommendations",
+    "Tax Implications",
+    "Fees & Charges",
+    "Conclusion"
+  ],
+  "accounts_in_scope": ["H-ISA-D", "H-ISA-S", "H-GIA-J"],
+  "key_amounts": ["£61,000", "£58,500", "£45,000"],
+  "approved_figures": ["£61,000", "£58,500", "£40,000", "£45,000", "0%"],
+  "sources": {
+    "sections": "the joint GIA is sold (report_request: 'Selling existing investments? | Yes'), so Tax Implications is included (template_spec)",
+    "accounts_in_scope": "report_request: 'Holloway ISAs (David and Susan) and the joint GIA'. H-GIA-J is listed under both holders in client_data_db.json but is one account",
+    "key_amounts": "ISA values from client_data_db.json (30 Apr 2026). the GIA is what is being sold, so its latest value must appear: a little over £45,000 seen live at the meeting (meeting_notes, 14 May 2026)",
+    "approved_figures": "every figure the report may use: account values from client_data_db.json, both GIA values (£40,000 struck 15 Mar 2026 in the db, £45,000 live at the meeting), the 0% initial charge from report_request. no fee rates, cgt figures or per-ISA split, a person adds those (fde_notes)"
+  }
+}

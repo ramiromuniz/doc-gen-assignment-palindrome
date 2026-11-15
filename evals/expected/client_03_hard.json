@@ -1,0 +1,20 @@
+{
+  "client": "client_03_hard",
+  "sections": [
+    "Introduction",
+    "Background & Objectives",
+    "Recommendations",
+    "Tax Implications",
+    "Fees & Charges",
+    "Conclusion"
+  ],
+  "accounts_in_scope": ["H-ISA-R", "H-ISA-JE", "H-GIA-JF"],
+  "key_amounts": ["£70,000", "£66,000", "£38,000", "£120,000"],
+  "approved_figures": ["£70,000", "£66,000", "£30,000", "£38,000", "£120,000", "0.5%"],
+  "sources": {
+    "sections": "the joint GIA is sold (report_request: 'Selling existing investments? | Yes'), so Tax Implications is included (template_spec)",
+    "accounts_in_scope": "report_request: 'Holloway ISAs (Robert and Jean), the joint GIA, and a new joint account'. H-GIA-JF is listed under both holders in client_data_db.json but is one account. the new joint account does not exist yet (no id, no value), so it belongs in Recommendations, not the holdings table. H-CASH-JE is not in the request and has no value: out of scope, its balance is to be confirmed (meeting_notes)",
+    "key_amounts": "ISA values from client_data_db.json (30 Apr 2026). the GIA is what is being sold, so its latest value must appear: around £38,000 seen live at the meeting (meeting_notes, 16 May 2026). £120,000 inheritance (meeting_notes, report_request)",
+    "approved_figures": "every figure the report may use: account values from client_data_db.json, both GIA values (£30,000 struck 10 Mar 2026 in the db, £38,000 live at the meeting), the £120,000 inheritance, the 0.5% initial charge from report_request. no fee rates, cgt figures, isa allowances or derived totals and splits, a person adds those (fde_notes)"
+  }
+}
