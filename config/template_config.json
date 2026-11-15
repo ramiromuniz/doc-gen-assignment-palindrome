@@ -77,11 +77,11 @@
           "prompt": [
             "Set out what we recommend the client does and why.",
             "1. Take the decisions from the meeting notes and the headline instruction from the report request.",
-            "2. For each action, say what happens, to which account, the amount involved, and how it meets the client's objectives.",
+            "2. For each action, say what happens, to which account, the amount involved, and how it meets the client's objectives. Use only amounts stated in the sources: do not work out remainders, totals or differences.",
             "3. Where a value comes from the meeting notes rather than the client database, say when it was seen, e.g. \"valued at around £X at our meeting on <date>\".",
             "4. Mention any initial charge stated in the report request. For ongoing platform or adviser charges, write [TO CONFIRM: <charge>].",
             "5. If money is expected but not certain yet, say so and do not treat it as available to invest.",
-            "Your answer follows \"We recommend the following:\". Use short paragraphs or a bulleted list."
+            "\"We recommend the following:\" is already in the report: start directly with the first recommendation and do not repeat it. Use short paragraphs or a bulleted list, and end after the last recommendation with no closing remarks."
           ]
         }
       }
