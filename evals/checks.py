@@ -54,6 +54,18 @@ def _numbers(text: str) -> set[float]:
     return {float(n.replace(",", "")) for n in re.findall(NUMBER, text)}
 
 
+def _tables(report: str) -> list[list[list[str]]]:
+    """Every markdown table in the report: its data rows, each row a list of cell texts."""
+    tables, rows = [], []
+    for line in report.splitlines() + [""]:  # the empty line closes a table at the very end
+        if line.startswith("|"):
+            rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
+        elif rows:
+            tables.append(rows[2:])  # skip the header row and the |---| divider
+            rows = []
+    return tables
+
+
 # ---------------------------------------------------------------------------
 # tier 1: generic
 # ---------------------------------------------------------------------------
@@ -82,6 +94,38 @@ def no_leftover_slots(*, output: str, **kwargs) -> Evaluation:
 # ---------------------------------------------------------------------------
 # tier 2: client facts
 # ---------------------------------------------------------------------------
+
+
+def accounts_in_scope(
+    *, output: str, expected_output: dict | None, **kwargs
+) -> Evaluation | list:
+    """F1 (critical): every holdings table lists exactly the accounts in scope, each once.
+
+    catches out-of-scope accounts (e.g. the cash account that only funds the top-up) and
+    joint accounts counted twice because the db lists them under each holder.
+    the account id can sit in any column: we look for it as a whole cell in each row.
+    """
+    if not expected_output:
+        return []  # no answer key for this client, skip
+    expected = expected_output["accounts_in_scope"]
+    tables = _tables(output)
+    if not tables:
+        return Evaluation(name="F1_accounts_in_scope", value=0.0, comment="no holdings table")
+
+    problems = []
+    for number, rows in enumerate(tables, start=1):
+        # how many rows of this table each in-scope account appears in
+        counts = {account: sum(account in row for row in rows) for account in expected}
+        missing = [account for account, count in counts.items() if count == 0]
+        repeated = [account for account, count in counts.items() if count > 1]
+        other_rows = len(rows) - sum(counts.values())  # rows for accounts not in scope
+        if missing or repeated or other_rows:
+            problems.append(f"table {number}: missing {missing}, repeated {repeated}, {other_rows} other rows")
+    return Evaluation(
+        name="F1_accounts_in_scope",
+        value=0.0 if problems else 1.0,
+        comment="; ".join(problems) if problems else "as expected",
+    )
 
 
 def sections_as_expected(
@@ -127,6 +171,7 @@ ALL_CHECKS = [
     risk_warning_verbatim,
     fca_line_verbatim,
     no_leftover_slots,
+    accounts_in_scope,
     sections_as_expected,
     only_approved_figures,
 ]

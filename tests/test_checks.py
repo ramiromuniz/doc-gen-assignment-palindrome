@@ -6,6 +6,7 @@ each test feeds a tiny made-up report into one check and confirms pass or fail.
 from evals.checks import (
     FCA_LINE,
     RISK_WARNING,
+    accounts_in_scope,
     fca_line_verbatim,
     no_leftover_slots,
     only_approved_figures,
@@ -51,6 +52,34 @@ def test_slots_fail_when_one_is_left():
     result = no_leftover_slots(output="Advice in relation to <<scope>>.")
     assert result.value == 0.0
     assert "<<scope>>" in result.comment
+
+
+# F1 accounts in scope
+
+SCOPE = {"accounts_in_scope": ["ISA-1", "GIA-J"]}
+HEADER = "| Account | Value |\n|---|---|\n"
+
+
+def test_accounts_pass_when_table_matches():
+    # same accounts in a different order still match
+    report = HEADER + "| GIA-J | £40,000 |\n| ISA-1 | £61,000 |"
+    assert accounts_in_scope(output=report, expected_output=SCOPE).value == 1.0
+
+
+def test_accounts_found_in_any_column():
+    report = "| Owner | Account |\n|---|---|\n| Joint | GIA-J |\n| David | ISA-1 |"
+    assert accounts_in_scope(output=report, expected_output=SCOPE).value == 1.0
+
+
+def test_accounts_fail_on_out_of_scope_or_duplicate():
+    extra = HEADER + "| ISA-1 | x |\n| GIA-J | x |\n| CASH-1 | x |"
+    twice = HEADER + "| ISA-1 | x |\n| GIA-J | x |\n| GIA-J | x |"
+    assert accounts_in_scope(output=extra, expected_output=SCOPE).value == 0.0
+    assert accounts_in_scope(output=twice, expected_output=SCOPE).value == 0.0
+
+
+def test_accounts_fail_without_a_table():
+    assert accounts_in_scope(output="No table here.", expected_output=SCOPE).value == 0.0
 
 
 # F2 sections
