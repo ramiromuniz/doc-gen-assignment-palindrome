@@ -47,6 +47,22 @@ pain point turned into a requirement with acceptance criteria.
 - **Gap:** clients without an answer key only get the generic checks. An LLM judge for
   groundedness and relevance closes that later.
 
+## D-006 · v1: instructions out of the data, into versioned prompts
+- **Why:** every call got every file as one user message, rules included. Engineer notes, the
+  spec and a market update full of unrelated figures reached the model as if they were client
+  facts, and the prompts were vague (one asked for a "best approximate estimate" of the tax).
+- **What:** rules as the system message; only client files sent (skip list in config, unknown
+  files still read); rules from the notes and spec rewritten as prompts; one commit per prompt;
+  the risk warning made static text. Prompts describe only their own output: quoting the text
+  around a slot made the model repeat it.
+- **Result** (`evals/results/v1.md`): accounts in scope 1/4 → 4/4. Invented tax and fee figures
+  gone, flagged as `[TO CONFIRM: ...]`. Cost -35%, time -39%.
+- **What prompting did not fix:** each section is still a separate call that decides the facts
+  on its own. So the model invents amounts where the sources give none (an "equal split" became
+  £20,000 each), and sections disagree: one report's table used the newer value, its
+  recommendation the older one. That is the case for v2: extract the facts once, as structured
+  JSON, and write every section from them.
+
 ---
 
 ## Taking it further
