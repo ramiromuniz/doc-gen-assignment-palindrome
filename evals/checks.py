@@ -55,13 +55,18 @@ def _numbers(text: str) -> set[float]:
 
 
 def _tables(report: str) -> list[list[list[str]]]:
-    """Every markdown table in the report: its data rows, each row a list of cell texts."""
-    tables, rows = [], []
-    for line in report.splitlines() + [""]:  # the empty line closes a table at the very end
+    """Every markdown table in the report as its data rows, each row a list of cell texts.
+
+    e.g. "| H-ISA-01 | Margaret Hughes | £52,000 |" -> ["H-ISA-01", "Margaret Hughes", "£52,000"]
+    """
+    tables, rows = [], []  # finished tables, and the rows of the table being read
+    for line in report.splitlines() + [""]:  # the extra empty line closes a table at the very end
         if line.startswith("|"):
+            # a table row: drop the outer pipes, split on the inner ones, trim each cell
             rows.append([cell.strip() for cell in line.strip().strip("|").split("|")])
         elif rows:
-            tables.append(rows[2:])  # skip the header row and the |---| divider
+            # first line after a table: keep it without the header row and the |---| divider
+            tables.append(rows[2:])
             rows = []
     return tables
 
@@ -112,13 +117,14 @@ def accounts_in_scope(
     if not tables:
         return Evaluation(name="F1_accounts_in_scope", value=0.0, comment="no holdings table")
 
+    # each table on its own: every in-scope account in exactly one row, and nothing else
     problems = []
     for number, rows in enumerate(tables, start=1):
-        # how many rows of this table each in-scope account appears in
+        # how many rows each in-scope account appears in, as a whole cell in any column
         counts = {account: sum(account in row for row in rows) for account in expected}
-        missing = [account for account, count in counts.items() if count == 0]
-        repeated = [account for account, count in counts.items() if count > 1]
-        other_rows = len(rows) - sum(counts.values())  # rows for accounts not in scope
+        missing = [account for account, count in counts.items() if count == 0]  # should be there
+        repeated = [account for account, count in counts.items() if count > 1]  # e.g. joint twice
+        other_rows = len(rows) - sum(counts.values())  # rows for no in-scope account, e.g. cash
         if missing or repeated or other_rows:
             problems.append(f"table {number}: missing {missing}, repeated {repeated}, {other_rows} other rows")
     return Evaluation(
