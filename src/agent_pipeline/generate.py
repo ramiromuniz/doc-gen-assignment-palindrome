@@ -2,6 +2,31 @@
 
 Usage:
     python -m agent_pipeline.generate --client client_01_clean
+
+The steps:
+    1. read the client's files into the context
+    2. extract the facts from the context, one model call (extract.py)
+    3. verify the facts against the db and the context, in code (verify.py)
+    4. write the report: the gate and the renderers read the facts, the writers read
+       the case notes (render.py), the template holds all fixed text
+
+Terms:
+    context        the client's files as one text, each headed by its file name.
+                   read by the extractor and the verifier, never by the writers
+    db             the client database (client_data_db.json), parsed: the system of
+                   record for which accounts exist, who holds them and their values
+    facts          the case, decided once by the model and verified by code: accounts in
+                   scope with their values, whether investments are sold, the actions,
+                   the initial charge, what a person must confirm
+    review notes   what verification corrected or removed, saved with the facts
+    case notes     the facts plus each account's type, owner and platform from the db, as
+                   JSON: all a writer sees
+    instructions   the standing rules, sent as the system message: global (shared by all
+                   calls), extraction (how to decide the facts), writing (how to write
+                   for the client)
+    template       a section's fixed text, with <<slots>> to fill
+    slot           filled by a writer (a model call, "prompt" in config) or a renderer
+                   (code, "render" in config)
 """
 
 # standard library
@@ -41,8 +66,8 @@ class ReportGenerator:
         self._model = model
 
     def generate(self, config: dict, facts: Facts, db: dict) -> str:
-        """The report as markdown, with the facts checked and the template filled."""
-        # writers read the checked facts, never the raw files: every section states the same facts
+        """The report as markdown: the template filled from the verified facts."""
+        # writers read the verified facts, never the raw files: every section states the same facts
         notes = case_notes(facts, db)
         # writers get the shared rules plus how to write for the client
         instructions = (
@@ -88,7 +113,7 @@ class ReportGenerator:
         content = section["template"]
         for name, spec in section.get("placeholders", {}).items():
             if "render" in spec:
-                # a fixed format filled by code from the checked facts, no model call
+                # a fixed format filled by code from the verified facts, no model call
                 content = content.replace(
                     f"<<{name}>>", RENDERERS[spec["render"]](facts, db)
                 )
@@ -107,12 +132,11 @@ class ReportGenerator:
         self,
         instructions: str,  # the standing rules, same for every call
         task: str,  # what this call must produce
-        notes: str,  # the case notes: the checked facts the writer works from
+        notes: str,  # the case notes: the verified facts the writer works from
         *,
         call_name: str = "llm-call",  # label for this call in the trace
-        call_metadata: (
-            dict | None
-        ) = None,  # e.g. which section and placeholder it fills
+        # e.g. which section and placeholder it fills
+        call_metadata: dict | None = None,
     ) -> str:
         response = self._openai.chat.completions.create(  # type: ignore[call-overload]
             model=self._model,
@@ -197,7 +221,7 @@ def main() -> None:
         facts, review_notes = verify_facts(facts, db, context)
         for note in review_notes:
             print(f"Review: {note}")
-        # step 3: write the report from the checked facts
+        # step 3: write the report from the verified facts
         report = None if args.facts_only else generator.generate(config, facts, db)
         # the report and the review notes are attached to the trace, so they can be read
         run.update(

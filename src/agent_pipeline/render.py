@@ -1,6 +1,7 @@
-"""Parts of the report written by code, not the model.
+"""Turn the verified facts into text, in code: the holdings table for the report and the
+case notes for the writers.
 
-the facts are already checked, so a fixed format needs no model call: the same input
+the facts are already verified, so a fixed format needs no model call: the same input
 always gives the same output, and nothing can drift into the wrong cell.
 """
 
@@ -40,7 +41,7 @@ def _account_details(account_id: str, db: dict) -> tuple[dict, str]:
 def holdings_table(facts: Facts, db: dict) -> str:
     """The accounts in scope as a markdown table: Account | Owner | Type | Value.
 
-    id, owner and type come from the client database, the value from the checked facts.
+    id, owner and type come from the client database, the value from the verified facts.
     """
     rows = ["| Account | Owner | Type | Value |", "|---|---|---|---|"]
     for account in facts.accounts_in_scope:
@@ -51,7 +52,7 @@ def holdings_table(facts: Facts, db: dict) -> str:
 
 
 def case_notes(facts: Facts, db: dict) -> str:
-    """The checked facts as the writers see them, as JSON.
+    """The verified facts as the writers see them, as JSON.
 
     each account gets its type, owner and platform from the database, and its value
     written exactly as in the table, so the text and the table cannot disagree.
