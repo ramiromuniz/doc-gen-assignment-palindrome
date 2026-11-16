@@ -1,0 +1,61 @@
+{
+  "facts": {
+    "accounts_in_scope": [
+      {
+        "account_id": "H-ISA-R",
+        "value": 70000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H-ISA-JE",
+        "value": 66000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H-GIA-JF",
+        "value": 38000.0,
+        "value_date": "2026-05-16",
+        "value_source": "meeting notes"
+      }
+    ],
+    "selling_investments": true,
+    "situation": "Robert and Jean Fletcher seek long-term growth and require no portfolio income for the foreseeable future. Both remain comfortable with risk profile 4 (moderate). Jean has received a cleared inheritance of around £120,000 from her late mother's estate; the report request specifies GBP 120,000 for investment alongside the full joint GIA proceeds. Handle the recent bereavement and inheritance sensitively. Their planned trip and discussion of grandchildren do not change the advice. The joint GIA valuation at the meeting was approximate. Jean's cash account is outside the report's account scope; its balance remains unknown, and she was unsure whether it was still active. The new joint investment account does not yet exist and is excluded from the existing-account list.",
+    "actions": [
+      {
+        "action": "Sell all investments in the jointly held Holloway GIA, H-GIA-JF, and use the proceeds alongside Jean's inheritance.",
+        "amount": "the full joint GIA value"
+      },
+      {
+        "action": "Invest Jean's inheritance alongside the joint GIA proceeds to fund the ISA top-ups and new joint investment account.",
+        "amount": "GBP 120,000"
+      },
+      {
+        "action": "Top up Robert's Holloway ISA, H-ISA-R, for the new tax year.",
+        "amount": null
+      },
+      {
+        "action": "Top up Jean's Holloway ISA, H-ISA-JE, for the new tax year.",
+        "amount": null
+      },
+      {
+        "action": "Open a new jointly held investment account and invest the balance after the ISA top-ups.",
+        "amount": null
+      }
+    ],
+    "initial_charge": "0.5%",
+    "to_confirm": [
+      "Exact joint GIA value; meeting valuation was around £38,000.",
+      "Exact inheritance amount; meeting notes describe around £120,000.",
+      "Amount of Robert's ISA top-up.",
+      "Amount of Jean's ISA top-up.",
+      "Amount to invest in the new joint account.",
+      "Jean's cash account balance and active status.",
+      "Capital gains tax position and any amount payable on the joint GIA disposal, confirmed by a person.",
+      "Applicable ongoing platform charge rates, confirmed by a person.",
+      "Applicable ongoing advice charge rates, confirmed by a person."
+    ]
+  },
+  "review_notes": []
+}
