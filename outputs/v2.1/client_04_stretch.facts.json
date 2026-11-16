@@ -1,0 +1,107 @@
+{
+  "facts": {
+    "accounts_in_scope": [
+      {
+        "account_id": "H4-ISA-J",
+        "value": 85000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H4-ISA-C",
+        "value": 82000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "B4-SIPP-J",
+        "value": 610000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "B4-SIPP-C",
+        "value": 430000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H4-GIA-HJ",
+        "value": 255000.0,
+        "value_date": "2026-05-20",
+        "value_source": "meeting notes"
+      },
+      {
+        "account_id": "B4-GIA-J",
+        "value": 95000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "M4-BOND-J",
+        "value": 180000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      }
+    ],
+    "selling_investments": true,
+    "situation": "James and Caroline Whitmore are joint clients. James sold his business in April; the transition has been busy and emotionally significant for both. The £850,000 completion payment has been received and is held in a solicitor's client account, but £200,000 is committed to repaying a bridging loan due shortly. A deferred earnout of up to £400,000 is payable over the next two years only if agreed revenue targets are met; none has been received and it is not guaranteed. Their objective is long-term growth and a tax-efficient base to replace James's income when he steps back from full-time work in about three years. Recommendations must be weighed against that goal. Agreed risk profile is 4, balanced to moderate. They have no current portfolio income requirement; possible consultancy work is unsettled. Future help with grandchildren's school fees and a possible charitable donation are aspirations only, with no action in this report. James is concerned about pension over-contributions.",
+    "actions": [
+      {
+        "action": "Repay James's bridging loan from the completion proceeds.",
+        "amount": "£200,000"
+      },
+      {
+        "action": "Top up James's Holloway ISA, H4-ISA-J, using his allowance for the new tax year.",
+        "amount": null
+      },
+      {
+        "action": "Top up Caroline's Holloway ISA, H4-ISA-C, using her allowance for the new tax year.",
+        "amount": null
+      },
+      {
+        "action": "Contribute to James's Brightwell SIPP, B4-SIPP-J, at an appropriate level within the applicable limits.",
+        "amount": null
+      },
+      {
+        "action": "Contribute to Caroline's Brightwell SIPP, B4-SIPP-C, at an appropriate level within the applicable limits.",
+        "amount": null
+      },
+      {
+        "action": "Add completion proceeds to the Holloway joint GIA, H4-GIA-HJ.",
+        "amount": null
+      },
+      {
+        "action": "Disinvest a portion of the Holloway joint GIA, H4-GIA-HJ, and rebalance it; the sale is a disposal.",
+        "amount": null
+      },
+      {
+        "action": "Place the remaining available completion proceeds into a new jointly held investment account.",
+        "amount": null
+      },
+      {
+        "action": "Retain the Meridian offshore bond, M4-BOND-J, unchanged and revisit it at the next review.",
+        "amount": null
+      }
+    ],
+    "initial_charge": "0.5%",
+    "to_confirm": [
+      "Exact Holloway joint GIA value; the meeting valuation was around £255,000.",
+      "Timing of the £200,000 bridging-loan repayment.",
+      "Amount of completion proceeds available for investment after the committed repayment.",
+      "James's ISA top-up amount and available allowance.",
+      "Caroline's ISA top-up amount and available allowance.",
+      "James's permitted SIPP contribution and agreed contribution amount.",
+      "Caroline's permitted SIPP contribution and agreed contribution amount.",
+      "Contribution amount for the Holloway joint GIA.",
+      "Amount to disinvest and rebalance within the Holloway joint GIA.",
+      "Amount to invest in the new joint account.",
+      "Deferred earnout receipt, amount and timing; up to £400,000 is contingent and none has been received.",
+      "Capital gains position and any capital gains tax amount on the Holloway joint GIA disposal, for human confirmation.",
+      "Ongoing platform charge rates for the in-scope accounts and new joint account, for human confirmation.",
+      "Ongoing advice charge rates, for human confirmation.",
+      "Applicable ongoing investment costs and total ongoing costs."
+    ]
+  },
+  "review_notes": []
+}

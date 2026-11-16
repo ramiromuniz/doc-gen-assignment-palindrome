@@ -1,0 +1,46 @@
+{
+  "facts": {
+    "accounts_in_scope": [
+      {
+        "account_id": "H-ISA-D",
+        "value": 61000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H-ISA-S",
+        "value": 58500.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H-GIA-J",
+        "value": 45000.0,
+        "value_date": "2026-05-14",
+        "value_source": "meeting notes"
+      }
+    ],
+    "selling_investments": true,
+    "situation": "David and Susan Clarke are both retired. Their objectives and circumstances are unchanged since the last review. Both remain comfortable with risk profile 5 (balanced). Neither currently needs income from the portfolio. They want to simplify their holdings rather than retain the joint GIA alongside their individual ISAs. Both ISAs are already part-funded for the current tax year. The joint GIA valuation seen during the meeting was described as a little over £45,000; the recorded figure is approximate.",
+    "actions": [
+      {
+        "action": "Disinvest the jointly held Holloway GIA H-GIA-J in full.",
+        "amount": "Full value of the joint GIA"
+      },
+      {
+        "action": "Use the joint GIA proceeds to top up David's ISA H-ISA-D and Susan's ISA H-ISA-S, split equally between the two ISAs.",
+        "amount": null
+      }
+    ],
+    "initial_charge": "0%",
+    "to_confirm": [
+      "Exact joint GIA value and available sale proceeds",
+      "Top-up amount for each ISA",
+      "Remaining ISA allowance for each client and whether the proposed equal split fits",
+      "Capital gains tax position and any tax amount arising from the GIA disposal",
+      "Ongoing platform charge rates",
+      "Ongoing advice charge rates"
+    ]
+  },
+  "review_notes": []
+}
