@@ -25,6 +25,7 @@ from document_formatter.loading import read_file
 
 # pipeline steps
 from agent_pipeline.extract import Facts, check_facts, extract_facts
+from agent_pipeline.render import RENDERERS
 
 # the system of record for which accounts exist, who holds them and their values (fde_notes)
 DATABASE_FILE = "client_data_db.json"
@@ -37,7 +38,7 @@ class ReportGenerator:
         self._openai = openai_client
         self._model = model
 
-    def generate(self, config: dict, context: str, facts: Facts) -> str:
+    def generate(self, config: dict, context: str, facts: Facts, db: dict) -> str:
         # writers get the shared rules plus how to write for the client
         instructions = (
             prompt_text(config.get("global_instructions", ""))
@@ -51,7 +52,7 @@ class ReportGenerator:
             sections.append(
                 {
                     "title": section.get("title", ""),
-                    "content": self._build_section(section, context, instructions),
+                    "content": self._build_section(section, context, instructions, facts, db),
                 }
             )
         return format_document(config, sections)
@@ -69,12 +70,18 @@ class ReportGenerator:
 
     # a step in the trace, the model calls for its placeholders nest inside it
     @observe(name="build-section", capture_input=False)
-    def _build_section(self, section: dict, context: str, instructions: str) -> str:
+    def _build_section(
+        self, section: dict, context: str, instructions: str, facts: Facts, db: dict
+    ) -> str:
         get_client().update_current_span(
             input={"section": section.get("id"), "template": section["template"]}
         )
         content = section["template"]
         for name, spec in section.get("placeholders", {}).items():
+            if "render" in spec:
+                # a fixed format filled by code from the checked facts, no model call
+                content = content.replace(f"<<{name}>>", RENDERERS[spec["render"]](facts, db))
+                continue
             value = self._ask(
                 instructions,
                 prompt_text(spec["prompt"]),
@@ -171,7 +178,7 @@ def main() -> None:
         for note in review_notes:
             print(f"Review: {note}")
         # step 3: write the report. the sections still read the raw files for now
-        report = None if args.facts_only else generator.generate(config, context, facts)
+        report = None if args.facts_only else generator.generate(config, context, facts, db)
         run.update(output=report or facts.model_dump(), metadata={"review_notes": review_notes})
     # traces are sent in the background, flush so they are not lost when the script exits
     get_client().flush()

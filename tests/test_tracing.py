@@ -52,7 +52,7 @@ def test_pipeline_runs_without_tracing_keys(monkeypatch):
         to_confirm=[],
     )
 
-    report = ReportGenerator(client, "gpt-4o-mini").generate(config, "CONTEXT", facts)
+    report = ReportGenerator(client, "gpt-4o-mini").generate(config, "CONTEXT", facts, db={})
 
     # intro always included, tax dropped because nothing is sold
     assert "## Intro" in report

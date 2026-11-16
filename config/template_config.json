@@ -67,15 +67,7 @@
           ]
         },
         "holdings_table": {
-          "prompt": [
-            "Build the table of the accounts this report covers.",
-            "1. Take the accounts listed in the report request. Only those accounts.",
-            "2. For each one, take its ID, owner, type and value from the client database. A joint account is one row, with both owners.",
-            "3. If the meeting notes give a more recent value for an account, use that value. Value is the amount only, written with the account's currency symbol and thousands separators, e.g. £52,000 (pounds unless the database says otherwise).",
-            "4. Leave out any account that does not exist yet, for example a new account still to be opened.",
-            "Return only a markdown table with the columns Account | Owner | Type | Value, where Account is the account ID. One row per account, no total row.",
-            "Start with the table's header row and add nothing before or after it."
-          ]
+          "render": "holdings_table"
         }
       }
     },
