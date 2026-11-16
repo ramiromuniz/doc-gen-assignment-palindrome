@@ -113,21 +113,29 @@ def check_facts(facts: Facts, db: dict, sources: str) -> tuple[Facts, list[str]]
     source_numbers = _numbers(sources)
     notes = []
 
-    # accounts: must exist, be open, have a value, appear once
+    # accounts: 4 checks: must exist, be open, have a value, appear once
     accounts = []
     for account in facts.accounts_in_scope:
         record = db_accounts.get(account.account_id)
+        # 1: Extracted Fact account ID must exist in the db
         if record is None:
             notes.append(f"{account.account_id}: not in the client database, removed")
             continue
+        # 2: Extracted Fact account must be open and have a value
         if record.get("status") != "open" or record.get("value") is None:
-            notes.append(f"{account.account_id}: closed or no value in the client database, removed")
+            notes.append(
+                f"{account.account_id}: closed or no value in the client database, removed"
+            )
             continue
+        # 3: joint accounts are listed under both holders, but only one copy is kept
         if account.account_id in {kept.account_id for kept in accounts}:
             continue  # joint account returned twice, already kept once
-        # the value must be the db value or appear in a source, otherwise use the db value
+        # 4: the value must be the db value or appear in a source, otherwise use the db value
         if account.value != record["value"] and account.value not in source_numbers:
-            notes.append(f"{account.account_id}: value {account.value:,.0f} not in the sources, database value used")
+            notes.append(
+                f"{account.account_id}: value {account.value:,.0f} not in the sources, database value used"
+            )
+            # keep the model's account, with the db value, date and source
             account = account.model_copy(
                 update={
                     "value": record["value"],
@@ -135,23 +143,32 @@ def check_facts(facts: Facts, db: dict, sources: str) -> tuple[Facts, list[str]]
                     "value_source": "client database",
                 }
             )
+        # the account passed all checks, keep it
         accounts.append(account)
 
     # amounts: every number in an amount must appear in a source, otherwise null
     actions = []
     for action in facts.actions:
         if action.amount and not _numbers(action.amount) <= source_numbers:
-            notes.append(f"amount '{action.amount}' not in the sources, set to null: {action.action}")
+            notes.append(
+                f"amount '{action.amount}' not in the sources, set to null: {action.action}"
+            )
             action = action.model_copy(update={"amount": None})
         actions.append(action)
 
     # the initial charge, same rule
     initial_charge = facts.initial_charge
     if initial_charge and not _numbers(initial_charge) <= source_numbers:
-        notes.append(f"initial charge '{initial_charge}' not in the sources, set to null")
+        notes.append(
+            f"initial charge '{initial_charge}' not in the sources, set to null"
+        )
         initial_charge = None
 
     checked = facts.model_copy(
-        update={"accounts_in_scope": accounts, "actions": actions, "initial_charge": initial_charge}
+        update={
+            "accounts_in_scope": accounts,
+            "actions": actions,
+            "initial_charge": initial_charge,
+        }
     )
     return checked, notes

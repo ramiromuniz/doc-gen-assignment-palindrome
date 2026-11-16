@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 # langfuse tracing. without keys it does nothing and the pipeline runs the same
 from langfuse import get_client, observe, propagate_attributes
+
 # drop in for the openai module that logs every call. langfuse patches it at runtime,
 # which the type checker cannot see, hence the ignore
 from langfuse.openai import openai  # type: ignore[attr-defined]
@@ -39,6 +40,7 @@ class ReportGenerator:
         self._model = model
 
     def generate(self, config: dict, context: str, facts: Facts, db: dict) -> str:
+        """The report as markdown, with the facts checked and the template filled."""
         # writers get the shared rules plus how to write for the client
         instructions = (
             prompt_text(config.get("global_instructions", ""))
@@ -52,7 +54,9 @@ class ReportGenerator:
             sections.append(
                 {
                     "title": section.get("title", ""),
-                    "content": self._build_section(section, context, instructions, facts, db),
+                    "content": self._build_section(
+                        section, context, instructions, facts, db
+                    ),
                 }
             )
         return format_document(config, sections)
@@ -61,7 +65,9 @@ class ReportGenerator:
     @observe(name="check-section-applies", capture_input=False)
     def _section_applies(self, section: dict, facts: Facts) -> bool:
         rule = section.get("use_if", "always")
-        get_client().update_current_span(input={"section": section.get("id"), "use_if": rule})
+        get_client().update_current_span(
+            input={"section": section.get("id"), "use_if": rule}
+        )
         if rule == "always":
             return True
         # the rule names a yes/no fact, e.g. "selling_investments", decided once at
@@ -80,7 +86,9 @@ class ReportGenerator:
         for name, spec in section.get("placeholders", {}).items():
             if "render" in spec:
                 # a fixed format filled by code from the checked facts, no model call
-                content = content.replace(f"<<{name}>>", RENDERERS[spec["render"]](facts, db))
+                content = content.replace(
+                    f"<<{name}>>", RENDERERS[spec["render"]](facts, db)
+                )
                 continue
             value = self._ask(
                 instructions,
@@ -99,7 +107,9 @@ class ReportGenerator:
         context: str,  # the client's source files
         *,
         call_name: str = "llm-call",  # label for this call in the trace
-        call_metadata: dict | None = None,  # e.g. which section and placeholder it fills
+        call_metadata: (
+            dict | None
+        ) = None,  # e.g. which section and placeholder it fills
     ) -> str:
         response = self._openai.chat.completions.create(  # type: ignore[call-overload]
             model=self._model,
@@ -139,7 +149,9 @@ def main() -> None:
         "--config", type=Path, default=Path("config/template_config.json")
     )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
-    parser.add_argument("--facts-only", action="store_true", help="stop after extracting the facts")
+    parser.add_argument(
+        "--facts-only", action="store_true", help="stop after extracting the facts"
+    )
     args = parser.parse_args()
 
     load_dotenv()
@@ -152,17 +164,22 @@ def main() -> None:
     # only client data reaches the model. guidance for engineers and general material
     # (listed in config) is skipped; any other file is read, so a new source is never lost
     skipped = set(config.get("non_client_files", []))
-    filenames = sorted(p.name for p in client_dir.iterdir() if p.is_file() and p.name not in skipped)
+    filenames = sorted(
+        p.name for p in client_dir.iterdir() if p.is_file() and p.name not in skipped
+    )
     print(f"Sources used: {filenames}")
     context = read_client_context(client_dir, filenames)
 
     # root of the trace: one per report, every step and model call nests under it.
     # tagged with the client so runs can be filtered per client
-    with get_client().start_as_current_observation(
-        name="generate-report",
-        as_type="chain",
-        input={"client": args.client, "sources": filenames},
-    ) as run, propagate_attributes(trace_name="generate-report", tags=[args.client]):
+    with (
+        get_client().start_as_current_observation(
+            name="generate-report",
+            as_type="chain",
+            input={"client": args.client, "sources": filenames},
+        ) as run,
+        propagate_attributes(trace_name="generate-report", tags=[args.client]),
+    ):
         # step 1: decide the facts of the case once. only the shared rules: facts are
         # neutral notes, how to write for the client is the writers' job
         facts = extract_facts(
@@ -178,8 +195,13 @@ def main() -> None:
         for note in review_notes:
             print(f"Review: {note}")
         # step 3: write the report. the sections still read the raw files for now
-        report = None if args.facts_only else generator.generate(config, context, facts, db)
-        run.update(output=report or facts.model_dump(), metadata={"review_notes": review_notes})
+        report = (
+            None if args.facts_only else generator.generate(config, context, facts, db)
+        )
+        # the report and the review notes are attached to the trace, so they can be read
+        run.update(
+            output=report or facts.model_dump(), metadata={"review_notes": review_notes}
+        )
     # traces are sent in the background, flush so they are not lost when the script exits
     get_client().flush()
 
@@ -187,7 +209,9 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
     facts_path = args.output_dir / f"{args.client}.facts.json"
     saved = {"facts": facts.model_dump(), "review_notes": review_notes}
-    facts_path.write_text(json.dumps(saved, indent=2, ensure_ascii=False), encoding="utf-8")
+    facts_path.write_text(
+        json.dumps(saved, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     print(f"Wrote {facts_path}")
     if report is None:
         return

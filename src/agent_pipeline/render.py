@@ -28,6 +28,7 @@ def _account_details(account_id: str, db: dict) -> tuple[dict, str]:
         for holder in db["holders"].values()
         if any(a["account_id"] == account_id for a in holder["accounts"])
     ]
+    # the account record is the same under both holders, so just take the first
     record = next(a for a in holders[0]["accounts"] if a["account_id"] == account_id)
     # a joint account is owned by "Joint" in the database: name the people instead
     owner = record["owner"]
