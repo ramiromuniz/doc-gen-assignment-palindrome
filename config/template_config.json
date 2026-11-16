@@ -28,7 +28,7 @@
   "extraction_prompt": [
     "Extract the facts of this client's case, as plain notes for the adviser, not text for the client.",
     "1. Accounts in scope: only the accounts the report request covers, each matched to its id in the client database. A joint account is listed under each holder but counts once. Leave out accounts that do not exist yet.",
-    "2. Values: if the meeting notes give a more recent value than the client database, use it.",
+    "2. Values: if the meeting notes give a more recent value than the client database, use it, even if it is approximate (e.g. \"about\" or \"just over\" a figure): take the figure as stated and add the exact value to the to-confirm list.",
     "3. Situation: the client's circumstances only.",
     "4. Actions: what happens to the client's money or accounts, not admin steps. Give an amount only if the sources state it. Never calculate or estimate one: use null.",
     "5. To confirm: missing amounts, money that is expected but not certain, balances to check, capital gains tax and ongoing charges, each as a short phrase."
