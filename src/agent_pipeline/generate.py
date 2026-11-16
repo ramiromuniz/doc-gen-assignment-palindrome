@@ -2,6 +2,31 @@
 
 Usage:
     python -m agent_pipeline.generate --client client_01_clean
+
+The steps:
+    1. read the client's files into the context
+    2. extract the facts from the context, one model call (extract.py)
+    3. verify the facts against the db and the context, in code (verify.py)
+    4. write the report: the gate and the renderers read the facts, the writers read
+       the case notes (render.py), the template holds all fixed text
+
+Terms:
+    context        the client's files as one text, each headed by its file name.
+                   read by the extractor and the verifier, never by the writers
+    db             the client database (client_data_db.json), parsed: the system of
+                   record for which accounts exist, who holds them and their values
+    facts          the case, decided once by the model and verified by code: accounts in
+                   scope with their values, whether investments are sold, the actions,
+                   the initial charge, what a person must confirm
+    review notes   what verification corrected or removed, saved with the facts
+    case notes     the facts plus each account's type, owner and platform from the db, as
+                   JSON: all a writer sees
+    instructions   the standing rules, sent as the system message: global (shared by all
+                   calls), extraction (how to decide the facts), writing (how to write
+                   for the client)
+    template       a section's fixed text, with <<slots>> to fill
+    slot           filled by a writer (a model call, "prompt" in config) or a renderer
+                   (code, "render" in config)
 """
 
 # standard library
@@ -15,6 +40,7 @@ from dotenv import load_dotenv
 
 # langfuse tracing. without keys it does nothing and the pipeline runs the same
 from langfuse import get_client, observe, propagate_attributes
+
 # drop in for the openai module that logs every call. langfuse patches it at runtime,
 # which the type checker cannot see, hence the ignore
 from langfuse.openai import openai  # type: ignore[attr-defined]
@@ -22,6 +48,14 @@ from langfuse.openai import openai  # type: ignore[attr-defined]
 # document helpers: reading source files and rendering the final markdown
 from document_formatter.formatting import format_document
 from document_formatter.loading import read_file
+
+# pipeline steps
+from agent_pipeline.extract import Facts, extract_facts
+from agent_pipeline.render import RENDERERS, case_notes
+from agent_pipeline.verify import verify_facts
+
+# the system of record for which accounts exist, who holds them and their values (fde_notes)
+DATABASE_FILE = "client_data_db.json"
 
 
 class ReportGenerator:
@@ -31,51 +65,63 @@ class ReportGenerator:
         self._openai = openai_client
         self._model = model
 
-    def generate(self, config: dict, context: str) -> str:
-        instructions = prompt_text(config.get("global_instructions", ""))
+    def generate(self, config: dict, facts: Facts, db: dict) -> str:
+        """The report as markdown: the template filled from the verified facts."""
+        # writers read the verified facts, never the raw files: every section states the same facts
+        notes = case_notes(facts, db)
+        # writers get the shared rules plus how to write for the client
+        instructions = (
+            prompt_text(config.get("global_instructions", ""))
+            + "\n\n"
+            + prompt_text(config.get("writing_instructions", ""))
+        )
         sections = []
         for section in config["sections"]:
-            if not self._section_applies(section, context, instructions):
+            if not self._section_applies(section, facts):
                 continue
             sections.append(
                 {
                     "title": section.get("title", ""),
-                    "content": self._build_section(section, context, instructions),
+                    "content": self._build_section(
+                        section, notes, instructions, facts, db
+                    ),
                 }
             )
         return format_document(config, sections)
 
-    # a step in the trace, its output is the yes/no decision.
-    # capture_input=False so the whole client context is not copied into every step
+    # a step in the trace, its output is the yes/no decision
     @observe(name="check-section-applies", capture_input=False)
-    def _section_applies(self, section: dict, context: str, instructions: str) -> bool:
+    def _section_applies(self, section: dict, facts: Facts) -> bool:
         rule = section.get("use_if", "always")
-        get_client().update_current_span(input={"section": section.get("id"), "use_if": rule})
+        get_client().update_current_span(
+            input={"section": section.get("id"), "use_if": rule}
+        )
         if rule == "always":
             return True
-        verdict = self._ask(
-            instructions,
-            f"Decide whether this section applies to the client.\n"
-            f"Rule: {rule}\n"
-            f"Reply with only 'yes' or 'no'.",
-            context,
-            call_name="decide-section-inclusion",
-            call_metadata={"section": section.get("id")},
-        )
-        return verdict.lower().startswith("y")
+        # the rule names a yes/no fact, e.g. "selling_investments", decided once at
+        # extraction. no model call here; a rule naming no fact fails loudly
+        return bool(getattr(facts, rule))
 
     # a step in the trace, the model calls for its placeholders nest inside it
     @observe(name="build-section", capture_input=False)
-    def _build_section(self, section: dict, context: str, instructions: str) -> str:
+    def _build_section(
+        self, section: dict, notes: str, instructions: str, facts: Facts, db: dict
+    ) -> str:
         get_client().update_current_span(
             input={"section": section.get("id"), "template": section["template"]}
         )
         content = section["template"]
         for name, spec in section.get("placeholders", {}).items():
+            if "render" in spec:
+                # a fixed format filled by code from the verified facts, no model call
+                content = content.replace(
+                    f"<<{name}>>", RENDERERS[spec["render"]](facts, db)
+                )
+                continue
             value = self._ask(
                 instructions,
                 prompt_text(spec["prompt"]),
-                context,
+                notes,
                 call_name="fill-placeholder",
                 call_metadata={"section": section.get("id"), "placeholder": name},
             )
@@ -86,17 +132,18 @@ class ReportGenerator:
         self,
         instructions: str,  # the standing rules, same for every call
         task: str,  # what this call must produce
-        context: str,  # the client's source files
+        notes: str,  # the case notes: the verified facts the writer works from
         *,
         call_name: str = "llm-call",  # label for this call in the trace
-        call_metadata: dict | None = None,  # e.g. which section and placeholder it fills
+        # e.g. which section and placeholder it fills
+        call_metadata: dict | None = None,
     ) -> str:
         response = self._openai.chat.completions.create(  # type: ignore[call-overload]
             model=self._model,
             # rules as the system message, kept apart from the client data and the task
             messages=[
                 {"role": "system", "content": instructions},
-                {"role": "user", "content": f"{context}\n\n---\n\n{task}"},
+                {"role": "user", "content": f"CASE NOTES\n{notes}\n\n---\n\n{task}"},
             ],
             # name and metadata are read by langfuse and removed before the request
             # goes to openai, so what the model receives does not change
@@ -129,33 +176,71 @@ def main() -> None:
         "--config", type=Path, default=Path("config/template_config.json")
     )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs"))
+    parser.add_argument(
+        "--facts-only", action="store_true", help="stop after extracting the facts"
+    )
     args = parser.parse_args()
 
     load_dotenv()
-    generator = ReportGenerator(openai.OpenAI(), os.environ.get("OPENAI_MODEL", "gpt-6.1-sol"))
+    openai_client = openai.OpenAI()
+    model = os.environ.get("OPENAI_MODEL", "gpt-6.1-sol")
+    generator = ReportGenerator(openai_client, model)
 
     config = json.loads(args.config.read_text(encoding="utf-8"))
     client_dir = args.data_dir / args.client
     # only client data reaches the model. guidance for engineers and general material
     # (listed in config) is skipped; any other file is read, so a new source is never lost
     skipped = set(config.get("non_client_files", []))
-    filenames = sorted(p.name for p in client_dir.iterdir() if p.is_file() and p.name not in skipped)
+    filenames = sorted(
+        p.name for p in client_dir.iterdir() if p.is_file() and p.name not in skipped
+    )
     print(f"Sources used: {filenames}")
     context = read_client_context(client_dir, filenames)
 
     # root of the trace: one per report, every step and model call nests under it.
     # tagged with the client so runs can be filtered per client
-    with get_client().start_as_current_observation(
-        name="generate-report",
-        as_type="chain",
-        input={"client": args.client, "sources": filenames},
-    ) as run, propagate_attributes(trace_name="generate-report", tags=[args.client]):
-        report = generator.generate(config, context)
-        run.update(output=report)
+    with (
+        get_client().start_as_current_observation(
+            name="generate-report",
+            as_type="chain",
+            input={"client": args.client, "files": filenames},
+        ) as run,
+        propagate_attributes(trace_name="generate-report", tags=[args.client]),
+    ):
+        # step 1: decide the facts of the case once. only the shared rules: facts are
+        # neutral notes, how to write for the client is the writers' job
+        facts = extract_facts(
+            openai_client,
+            model,
+            prompt_text(config["global_instructions"]),
+            prompt_text(config["extraction_prompt"]),
+            context,
+        )
+        # step 2: verify the facts against the client database and the context, in code
+        db = json.loads((client_dir / DATABASE_FILE).read_text(encoding="utf-8"))
+        facts, review_notes = verify_facts(facts, db, context)
+        for note in review_notes:
+            print(f"Review: {note}")
+        # step 3: write the report from the verified facts
+        report = None if args.facts_only else generator.generate(config, facts, db)
+        # the report and the review notes are attached to the trace, so they can be read
+        run.update(
+            output=report or facts.model_dump(), metadata={"review_notes": review_notes}
+        )
     # traces are sent in the background, flush so they are not lost when the script exits
     get_client().flush()
 
+    # the facts are saved next to the report with what code corrected: for audit
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    facts_path = args.output_dir / f"{args.client}.facts.json"
+    saved = {"facts": facts.model_dump(), "review_notes": review_notes}
+    facts_path.write_text(
+        json.dumps(saved, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+    print(f"Wrote {facts_path}")
+    if report is None:
+        return
+
     out_path = args.output_dir / f"{args.client}.md"
     out_path.write_text(report, encoding="utf-8")
     print(f"Wrote {out_path}")

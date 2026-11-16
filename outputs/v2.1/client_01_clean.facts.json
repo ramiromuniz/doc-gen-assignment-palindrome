@@ -1,0 +1,26 @@
+{
+  "facts": {
+    "accounts_in_scope": [
+      {
+        "account_id": "H-ISA-01",
+        "value": 52000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      }
+    ],
+    "selling_investments": false,
+    "situation": "Margaret Hughes is retired, with no changes to her circumstances or objectives since the previous review. Her agreed risk profile is 4 (moderate), and she remains comfortable with that approach. She wishes to use this year's ISA allowance with cash held on deposit in her Holloway cash account. Her existing Stocks & Shares ISA is held in her sole name. She has no current income requirement from the portfolio and does not expect this to change in the near term. Gifting to grandchildren is a possible future discussion only; no action is agreed now.",
+    "actions": [
+      {
+        "action": "Move available cash from Holloway cash account H-CASH-01 into existing Stocks & Shares ISA H-ISA-01 as an ISA top-up, with no sale or disposal of existing investments.",
+        "amount": "£20,000"
+      }
+    ],
+    "initial_charge": "0%",
+    "to_confirm": [
+      "Ongoing platform charge rate",
+      "Ongoing advice charge rate"
+    ]
+  },
+  "review_notes": []
+}

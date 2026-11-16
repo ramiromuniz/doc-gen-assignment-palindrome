@@ -149,6 +149,25 @@ def sections_as_expected(
     )
 
 
+def key_amounts_present(
+    *, output: str, expected_output: dict | None, **kwargs
+) -> Evaluation | list:
+    """F3 (critical): every key amount for this client appears in the report.
+
+    the other side of F5: F5 catches a figure that should not be there, F3 one that is
+    missing, e.g. a stale database value used where a newer value was seen at the meeting.
+    """
+    if not expected_output:
+        return []  # no answer key for this client, skip
+    found = _numbers(output)
+    missing = [amount for amount in expected_output["key_amounts"] if not _numbers(amount) <= found]
+    return Evaluation(
+        name="F3_key_amounts",
+        value=0.0 if missing else 1.0,
+        comment=f"missing: {missing}" if missing else "all present",
+    )
+
+
 def only_approved_figures(
     *, output: str, expected_output: dict | None, **kwargs
 ) -> Evaluation | list:
@@ -179,5 +198,6 @@ ALL_CHECKS = [
     no_leftover_slots,
     accounts_in_scope,
     sections_as_expected,
+    key_amounts_present,
     only_approved_figures,
 ]

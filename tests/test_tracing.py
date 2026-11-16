@@ -7,6 +7,7 @@ so this checks the report still gets built when tracing has nothing to send to.
 from types import SimpleNamespace
 from typing import Any
 
+from agent_pipeline.extract import Facts
 from agent_pipeline.generate import ReportGenerator
 
 
@@ -33,19 +34,28 @@ def test_pipeline_runs_without_tracing_keys(monkeypatch):
     client: Any = SimpleNamespace(chat=SimpleNamespace(completions=FakeCompletions()))
 
     # smallest config that exercises both paths:
-    # intro is always included (no model call), tax needs the model to decide
+    # intro is always included, tax only if the facts say something is sold
     config = {
         "document_title": "Report",
         "sections": [
             {"id": "intro", "title": "Intro", "use_if": "always", "template": "Hello."},
-            {"id": "tax", "title": "Tax", "use_if": "Only if sold.", "template": "Tax."},
+            {"id": "tax", "title": "Tax", "use_if": "selling_investments", "template": "Tax."},
         ],
     }
+    # nothing is sold in this case
+    facts = Facts(
+        accounts_in_scope=[],
+        selling_investments=False,
+        situation="",
+        actions=[],
+        initial_charge=None,
+        to_confirm=[],
+    )
 
-    report = ReportGenerator(client, "gpt-4o-mini").generate(config, "CONTEXT")
+    report = ReportGenerator(client, "gpt-4o-mini").generate(config, facts, db={})
 
-    # intro always included, tax dropped because the fake model said no
+    # intro always included, tax dropped because nothing is sold
     assert "## Intro" in report
     assert "## Tax" not in report
-    # only one model call was made: the yes/no check for tax
-    assert len(client.chat.completions.requests) == 1
+    # no model calls: the gate reads the facts, and these sections have no slots to fill
+    assert len(client.chat.completions.requests) == 0
