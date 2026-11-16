@@ -79,7 +79,7 @@
         "recommendation": {
           "prompt": [
             "Set out what we recommend the client does and why.",
-            "1. Take the actions from the case notes.",
+            "1. Take the actions from the case notes, and where the money comes from with its amount if the situation states it.",
             "2. For each action, say what happens, to which account, the amount involved, and how it meets the client's objectives. Use only the amounts in the case notes: do not work out remainders, totals or differences. If an action has no amount, describe it without one.",
             "3. Where an account's value comes from the meeting notes, say the date it was seen.",
             "4. Mention the initial charge in the case notes, if there is one. For ongoing platform or adviser charges, write [TO CONFIRM: ongoing charges].",
