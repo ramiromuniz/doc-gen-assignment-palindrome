@@ -1,13 +1,14 @@
 """Unit tests for the parts of the report written by code, no model calls."""
 
 # standard library
+import json
 from types import SimpleNamespace
 from typing import Any
 
 # pipeline steps under test
 from agent_pipeline.extract import Account, Facts
 from agent_pipeline.generate import ReportGenerator
-from agent_pipeline.render import holdings_table, money
+from agent_pipeline.render import case_notes, holdings_table, money
 
 # a tiny client database: one own account, one joint account listed under both holders
 DB = {
@@ -54,6 +55,17 @@ def test_holdings_table_one_row_per_account_with_checked_value():
         "| ISA-1 | Ann Smith | Stocks & Shares ISA | £50,000 |",
         "| GIA-J | Ann Smith and Ben Smith | General Investment Account | £45,000 |",
     ]
+
+
+def test_case_notes_add_database_details_and_the_table_value():
+    notes = json.loads(case_notes(FACTS, DB))
+    joint = notes["accounts_in_scope"][1]
+    # the same value string as in the table, plus who owns it and what it is
+    assert joint["value"] == "£45,000"
+    assert joint["owner"] == "Ann Smith and Ben Smith"
+    assert joint["type"] == "General Investment Account"
+    # the rest of the facts pass through unchanged
+    assert notes["selling_investments"] is True
 
 
 def test_render_slot_is_filled_by_code_without_a_model_call():
