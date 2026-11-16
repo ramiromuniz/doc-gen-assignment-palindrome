@@ -1,0 +1,56 @@
+{
+  "facts": {
+    "accounts_in_scope": [
+      {
+        "account_id": "H-ISA-R",
+        "value": 70000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H-ISA-JE",
+        "value": 66000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "H-GIA-JF",
+        "value": 38000.0,
+        "value_date": "2026-05-16",
+        "value_source": "meeting notes"
+      }
+    ],
+    "selling_investments": true,
+    "situation": "Robert and Jean Fletcher seek long-term growth, with no portfolio income required for the foreseeable future. Their agreed risk profile remains 4 (moderate). Jean has received an inheritance of around £120,000 from her late mother's estate; the funds have cleared. They want to invest it alongside their existing portfolio. Handle Jean's bereavement sensitively. The joint GIA valuation reported at the meeting was approximate. Jean also mentioned a small cash account whose balance and active status she could not recall.",
+    "actions": [
+      {
+        "action": "Disinvest the existing jointly held Holloway GIA, H-GIA-JF.",
+        "amount": "the full joint GIA value"
+      },
+      {
+        "action": "Use the inheritance and joint GIA proceeds to top up Robert's ISA, H-ISA-R, for the new tax year.",
+        "amount": null
+      },
+      {
+        "action": "Use the inheritance and joint GIA proceeds to top up Jean's ISA, H-ISA-JE, for the new tax year.",
+        "amount": null
+      },
+      {
+        "action": "Open a new jointly held investment account and invest the balance of the inheritance and joint GIA proceeds after the ISA top-ups.",
+        "amount": null
+      }
+    ],
+    "initial_charge": "0.5%",
+    "to_confirm": [
+      "Exact joint GIA value; meeting valuation was around £38,000.",
+      "Amount of Robert's ISA top-up.",
+      "Amount of Jean's ISA top-up.",
+      "Balance to invest in the new joint account.",
+      "Jean's cash account balance and active status.",
+      "Capital gains tax amount on the joint GIA disposal, confirmed by a person.",
+      "Ongoing platform charge rates, including for the new joint account, confirmed by a person.",
+      "Ongoing advice charge rates, including for the new joint account, confirmed by a person."
+    ]
+  },
+  "review_notes": []
+}
