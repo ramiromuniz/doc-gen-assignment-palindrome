@@ -5,7 +5,8 @@ usage:
 
 langfuse's run_experiment does the looping: one item per report, every check run on it,
 scores collected. without langfuse keys it runs locally. the scores are printed as one table
-(client x check) and saved to evals/results/<folder>.md, so every version leaves a record.
+(client x check) and saved to evals/results/<eval version>/<folder>.md, so every version of
+the eval keeps its own record.
 """
 
 # standard library
@@ -22,7 +23,7 @@ from langfuse import get_client
 # eval checks
 from evals.checks import ALL_CHECKS
 
-EVAL_VERSION = "eval-v0"  # bump when checks are added, then re-score the baseline with it
+EVAL_VERSION = "eval-v1"  # bump when checks are added, then re-score the baseline with it
 EXPECTED_DIR = Path("evals/expected")
 RESULTS_DIR = Path("evals/results")
 
@@ -90,11 +91,12 @@ def main() -> None:
     )
     get_client().flush()
 
-    # print and save the table, one file per reports folder (e.g. evals/results/baseline.md)
+    # print and save the table, one file per reports folder (e.g. evals/results/eval-v1/baseline.md)
     table = f"# {EVAL_VERSION} · {args.reports.as_posix()}\n\n{results_table(result.item_results)}\n"
     print(table)
-    RESULTS_DIR.mkdir(exist_ok=True)
-    (RESULTS_DIR / f"{args.reports.name}.md").write_text(table, encoding="utf-8")
+    out_dir = RESULTS_DIR / EVAL_VERSION
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{args.reports.name}.md").write_text(table, encoding="utf-8")
 
 
 if __name__ == "__main__":

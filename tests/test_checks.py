@@ -8,6 +8,7 @@ from evals.checks import (
     RISK_WARNING,
     accounts_in_scope,
     fca_line_verbatim,
+    key_amounts_present,
     no_leftover_slots,
     only_approved_figures,
     risk_warning_verbatim,
@@ -99,6 +100,28 @@ def test_sections_fail_when_one_is_missing():
 
 def test_sections_skipped_without_answer_key():
     assert sections_as_expected(output=REPORT, expected_output=None) == []
+
+
+# F3 key amounts
+
+AMOUNTS = {"key_amounts": ["£52,000", "£45,000"]}
+
+
+def test_amounts_pass_when_all_present():
+    report = "Your ISA is worth £52,000 and the joint GIA was a little over £45,000."
+    assert key_amounts_present(output=report, expected_output=AMOUNTS).value == 1.0
+
+
+def test_amounts_fail_on_a_stale_value():
+    # the database value used instead of the newer one seen at the meeting
+    report = "Your ISA is worth £52,000 and the joint GIA £40,000."
+    result = key_amounts_present(output=report, expected_output=AMOUNTS)
+    assert result.value == 0.0
+    assert "£45,000" in result.comment
+
+
+def test_amounts_skipped_without_answer_key():
+    assert key_amounts_present(output="£45,000", expected_output=None) == []
 
 
 # F5 approved figures
