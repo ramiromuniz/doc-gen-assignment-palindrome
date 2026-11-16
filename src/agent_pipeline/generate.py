@@ -25,8 +25,9 @@ from document_formatter.formatting import format_document
 from document_formatter.loading import read_file
 
 # pipeline steps
-from agent_pipeline.extract import Facts, check_facts, extract_facts
+from agent_pipeline.extract import Facts, extract_facts
 from agent_pipeline.render import RENDERERS, case_notes
+from agent_pipeline.verify import verify_facts
 
 # the system of record for which accounts exist, who holds them and their values (fde_notes)
 DATABASE_FILE = "client_data_db.json"
@@ -178,7 +179,7 @@ def main() -> None:
         get_client().start_as_current_observation(
             name="generate-report",
             as_type="chain",
-            input={"client": args.client, "sources": filenames},
+            input={"client": args.client, "files": filenames},
         ) as run,
         propagate_attributes(trace_name="generate-report", tags=[args.client]),
     ):
@@ -191,9 +192,9 @@ def main() -> None:
             prompt_text(config["extraction_prompt"]),
             context,
         )
-        # step 2: check the facts against the client database and the sources, in code
+        # step 2: verify the facts against the client database and the context, in code
         db = json.loads((client_dir / DATABASE_FILE).read_text(encoding="utf-8"))
-        facts, review_notes = check_facts(facts, db, context)
+        facts, review_notes = verify_facts(facts, db, context)
         for note in review_notes:
             print(f"Review: {note}")
         # step 3: write the report from the checked facts
