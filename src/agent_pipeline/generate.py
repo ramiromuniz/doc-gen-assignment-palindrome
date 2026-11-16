@@ -26,7 +26,7 @@ from document_formatter.loading import read_file
 
 # pipeline steps
 from agent_pipeline.extract import Facts, check_facts, extract_facts
-from agent_pipeline.render import RENDERERS
+from agent_pipeline.render import RENDERERS, case_notes
 
 # the system of record for which accounts exist, who holds them and their values (fde_notes)
 DATABASE_FILE = "client_data_db.json"
@@ -39,8 +39,10 @@ class ReportGenerator:
         self._openai = openai_client
         self._model = model
 
-    def generate(self, config: dict, context: str, facts: Facts, db: dict) -> str:
+    def generate(self, config: dict, facts: Facts, db: dict) -> str:
         """The report as markdown, with the facts checked and the template filled."""
+        # writers read the checked facts, never the raw files: every section states the same facts
+        notes = case_notes(facts, db)
         # writers get the shared rules plus how to write for the client
         instructions = (
             prompt_text(config.get("global_instructions", ""))
@@ -55,7 +57,7 @@ class ReportGenerator:
                 {
                     "title": section.get("title", ""),
                     "content": self._build_section(
-                        section, context, instructions, facts, db
+                        section, notes, instructions, facts, db
                     ),
                 }
             )
@@ -77,7 +79,7 @@ class ReportGenerator:
     # a step in the trace, the model calls for its placeholders nest inside it
     @observe(name="build-section", capture_input=False)
     def _build_section(
-        self, section: dict, context: str, instructions: str, facts: Facts, db: dict
+        self, section: dict, notes: str, instructions: str, facts: Facts, db: dict
     ) -> str:
         get_client().update_current_span(
             input={"section": section.get("id"), "template": section["template"]}
@@ -93,7 +95,7 @@ class ReportGenerator:
             value = self._ask(
                 instructions,
                 prompt_text(spec["prompt"]),
-                context,
+                notes,
                 call_name="fill-placeholder",
                 call_metadata={"section": section.get("id"), "placeholder": name},
             )
@@ -104,7 +106,7 @@ class ReportGenerator:
         self,
         instructions: str,  # the standing rules, same for every call
         task: str,  # what this call must produce
-        context: str,  # the client's source files
+        notes: str,  # the case notes: the checked facts the writer works from
         *,
         call_name: str = "llm-call",  # label for this call in the trace
         call_metadata: (
@@ -116,7 +118,7 @@ class ReportGenerator:
             # rules as the system message, kept apart from the client data and the task
             messages=[
                 {"role": "system", "content": instructions},
-                {"role": "user", "content": f"{context}\n\n---\n\n{task}"},
+                {"role": "user", "content": f"CASE NOTES\n{notes}\n\n---\n\n{task}"},
             ],
             # name and metadata are read by langfuse and removed before the request
             # goes to openai, so what the model receives does not change
@@ -194,10 +196,8 @@ def main() -> None:
         facts, review_notes = check_facts(facts, db, context)
         for note in review_notes:
             print(f"Review: {note}")
-        # step 3: write the report. the sections still read the raw files for now
-        report = (
-            None if args.facts_only else generator.generate(config, context, facts, db)
-        )
+        # step 3: write the report from the checked facts
+        report = None if args.facts_only else generator.generate(config, facts, db)
         # the report and the review notes are attached to the trace, so they can be read
         run.update(
             output=report or facts.model_dump(), metadata={"review_notes": review_notes}

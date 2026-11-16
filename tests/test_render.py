@@ -87,7 +87,7 @@ def test_render_slot_is_filled_by_code_without_a_model_call():
         ],
     }
 
-    report = ReportGenerator(client, "test-model").generate(config, "CONTEXT", FACTS, DB)
+    report = ReportGenerator(client, "test-model").generate(config, FACTS, DB)
 
     # the table is in the report and no slot is left unfilled
     assert "| GIA-J | Ann Smith and Ben Smith | General Investment Account | £45,000 |" in report
