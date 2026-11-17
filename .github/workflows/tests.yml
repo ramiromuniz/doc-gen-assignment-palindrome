@@ -1,10 +1,11 @@
-# runs the unit tests on every push and pull request.
+# runs the unit tests on every pull request and on every merge to main.
 # no API keys needed: the tests never call a model, so CI is free and repeatable.
 name: tests
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
 
 jobs:
   pytest:
