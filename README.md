@@ -22,6 +22,9 @@ Seven checks per report, four clients (28 checks). Full details in
 | v1 | Rules moved into versioned prompts, only client files reach the model | 23/28 (gpt-4o-mini), 28/28 (gpt-6.1-sol) | $0.007, $0.146 |
 | v2.1 | Facts decided once and checked in code, every section written from them | 28/28 in 3 out of 3 runs | $0.112 |
 
+A held-out client, written after the pipeline was frozen and run once with no changes, passed
+7/7 (see [`heldout/README.md`](heldout/README.md)).
+
 ## How it works
 
 The model proposes, code verifies, and the report is written from the verified facts.
@@ -97,14 +100,22 @@ The tests never call a model. They run on every pull request (GitHub Actions).
 
 ### Tracing is optional
 
-With Langfuse keys in `.env`, every report is traced: each step, model call, cost and latency,
-tagged with the client. Without keys the pipeline runs the same. Langfuse then prints
+With Langfuse keys in `.env`, every report is traced to your own Langfuse project: each step,
+model call, cost and latency, tagged with the client. To get keys:
+
+1. Sign in at [cloud.langfuse.com](https://cloud.langfuse.com) and create a project.
+2. In the project settings, open API keys and create a key pair.
+3. Put the public key (`pk-lf-...`) and the secret key (`sk-lf-...`) in `.env`. For a project in
+   the US region, also set `LANGFUSE_BASE_URL=https://us.cloud.langfuse.com`.
+
+Without keys the pipeline runs the same. Langfuse then prints
 `Authentication error: Langfuse client initialized without public_key`, which is expected and
 can be ignored.
 
 ## Run an earlier version
 
-Each version is a git tag: `baseline`, `v1`, `v2`, `v2.1`.
+Each version is a git tag: `baseline`, `v1`, `v2`, `v2.1`. The tag `submission` marks the
+version that was handed in.
 
 ```bash
 git checkout v1                   # the code as it was at v1
@@ -121,6 +132,7 @@ The saved reports from every version are in `outputs/<version>/`.
 | `src/agent_pipeline/` | The pipeline: `generate.py` (the steps), `extract.py`, `verify.py`, `render.py` |
 | `src/document_formatter/` | Reads the source files and assembles the final document |
 | `data/` | The four clients' files |
+| `heldout/` | A synthetic client used only to test that the fixes generalise |
 | `evals/` | The checks (`checks.py`), the runner (`run.py`), the answer keys (`expected/`) and the results (`results/`) |
 | `outputs/` | The reports from every version |
 | `tests/` | Unit tests |
