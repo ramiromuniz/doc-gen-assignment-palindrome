@@ -1,0 +1,19 @@
+{
+  "client": "client_05_synthetic",
+  "sections": [
+    "Introduction",
+    "Background & Objectives",
+    "Recommendations",
+    "Fees & Charges",
+    "Conclusion"
+  ],
+  "accounts_in_scope": ["C-ISA-H", "C-ISA-M", "C-GIA-J"],
+  "key_amounts": ["£15,000", "£74,000", "£52,500", "£33,500"],
+  "approved_figures": ["£15,000", "£74,000", "£52,500", "£33,500", "£31,000", "£18,000", "0%"],
+  "sources": {
+    "sections": "nothing is sold (report_request: 'Selling existing investments? | No'; meeting_notes: selling the GIA was discussed but they decided against it), so no Tax Implications (template_spec)",
+    "accounts_in_scope": "report_request: 'Calder ISAs (Helen and Mark) and the joint GIA'. C-GIA-J is listed under both holders in client_data_db.json but is one account. C-ISA-H-OLD is closed (transferred into C-ISA-H). C-CASH-H is the source of funds, not covered",
+    "key_amounts": "£15,000 top-up (report_request, meeting_notes); ISA values from client_data_db.json (30 Apr 2026); the joint GIA's newer value of £33,500 seen at the meeting (meeting_notes, 20 May 2026), not the £31,000 from February",
+    "approved_figures": "every figure the report may use: account values from client_data_db.json (including the older £31,000 GIA value and the £18,000 cash balance), £33,500 from the meeting, the £15,000 top-up and the 0% initial charge from report_request. no fee rates, cgt figures or ISA allowance figures, a person adds those (fde_notes)"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "facts": {
+    "accounts_in_scope": [
+      {
+        "account_id": "C-ISA-H",
+        "value": 74000.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "C-ISA-M",
+        "value": 52500.0,
+        "value_date": "2026-04-30",
+        "value_source": "client database"
+      },
+      {
+        "account_id": "C-GIA-J",
+        "value": 33500.0,
+        "value_date": "2026-05-20",
+        "value_source": "meeting notes"
+      }
+    ],
+    "selling_investments": false,
+    "situation": "Helen Doyle works part time; Mark Doyle retired last year. Their objectives are unchanged, and both remain comfortable with risk profile 4 (moderate). Neither currently needs portfolio income. Helen has cash building up in her Calder cash account and wants to use part of this year's ISA allowance. Her old ISA was transferred into her current Calder ISA last summer; she now holds one ISA. The ISAs are individually owned, and the GIA is jointly owned.",
+    "actions": [
+      {
+        "action": "Move money from Helen's Calder cash account, C-CASH-H, into her existing Stocks & Shares ISA, C-ISA-H.",
+        "amount": "£15,000"
+      },
+      {
+        "action": "Leave the joint GIA, C-GIA-J, unchanged; no investments are to be sold.",
+        "amount": null
+      }
+    ],
+    "initial_charge": "0%",
+    "to_confirm": [
+      "Ongoing platform charge rates",
+      "Ongoing advice charge rates"
+    ]
+  },
+  "review_notes": []
+}
