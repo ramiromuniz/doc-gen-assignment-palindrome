@@ -1,0 +1,19 @@
+# runs the unit tests on every push and pull request.
+# no API keys needed: the tests never call a model, so CI is free and repeatable.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.10"
+      # the exact versions from uv.lock, plus pytest
+      - run: uv sync --locked --extra dev
+      - run: uv run pytest -q
