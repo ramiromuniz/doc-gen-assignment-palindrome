@@ -1,0 +1,75 @@
+{
+  "snapshot_date": "2026-04-30",
+  "holders": {
+    "client": {
+      "name": "Helen Doyle",
+      "accounts": [
+        {
+          "account_id": "C-ISA-H",
+          "platform": "Calder",
+          "type": "Stocks & Shares ISA",
+          "owner": "Helen Doyle",
+          "status": "open",
+          "value": 74000.0,
+          "currency": "GBP",
+          "valuation_date": "2026-04-30"
+        },
+        {
+          "account_id": "C-ISA-H-OLD",
+          "platform": "Calder",
+          "type": "Stocks & Shares ISA",
+          "owner": "Helen Doyle",
+          "status": "closed",
+          "value": null,
+          "currency": "GBP",
+          "valuation_date": "2025-06-30"
+        },
+        {
+          "account_id": "C-CASH-H",
+          "platform": "Calder",
+          "type": "Cash Account",
+          "owner": "Helen Doyle",
+          "status": "open",
+          "value": 18000.0,
+          "currency": "GBP",
+          "valuation_date": "2026-04-30"
+        },
+        {
+          "account_id": "C-GIA-J",
+          "platform": "Calder",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 31000.0,
+          "currency": "GBP",
+          "valuation_date": "2026-02-28"
+        }
+      ]
+    },
+    "partner": {
+      "name": "Mark Doyle",
+      "accounts": [
+        {
+          "account_id": "C-ISA-M",
+          "platform": "Calder",
+          "type": "Stocks & Shares ISA",
+          "owner": "Mark Doyle",
+          "status": "open",
+          "value": 52500.0,
+          "currency": "GBP",
+          "valuation_date": "2026-04-30"
+        },
+        {
+          "account_id": "C-GIA-J",
+          "platform": "Calder",
+          "type": "General Investment Account",
+          "owner": "Joint",
+          "status": "open",
+          "value": 31000.0,
+          "currency": "GBP",
+          "valuation_date": "2026-02-28"
+        }
+      ]
+    }
+  }
+}
