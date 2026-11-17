@@ -1,77 +1,75 @@
 # Decisions
 
-Short log of the key calls, why, and what we traded off. Detail lives in the linked issues and PRs.
+The key calls in the order they were made: what, why, and what it cost. Results are in
+`evals/results/summary.md`; the detail is in the linked issues and pull requests.
 
-**How the work is tracked:** one goal (#1) → phases per client (#2–#7) → tickets. Each ticket is a
-pain point turned into a requirement with acceptance criteria.
+## D-001 · Plan client by client, fix generically (#1)
+Each client exposed new problems. Every fix targets the class of problem, never one client's data,
+and the eval runs on all clients after every change.
 
----
-
-## D-001 · Work client by client, fix generically
-- Start with the simplest client, move up. Each client surfaces new pain points → new tickets.
-- Fixes solve the class of problem, never one client's data. A held-out set will be run.
-- The eval runs on all clients after every change, so regressions show up straight away.
-
-## D-002 · Measure before changing anything
-- Tracing first, then a baseline run of the untouched pipeline on all four clients.
-- Every later change is judged against that baseline.
+## D-002 · Measure before changing anything (#9)
+A baseline run of the untouched pipeline on all clients first, so every change is a before and
+after on the same clients.
 
 ## D-003 · Model access
-- Provided key returned `401 account_deactivated`. Using my own key, same model (`gpt-4o-mini`),
-  so results stay comparable.
+The provided key was deactivated, so I used my own key with the same model to keep results
+comparable.
 
-## D-004 · Tracing with Langfuse
-- **Why:** nothing recorded what the model was sent, what it returned, or the cost. No way to audit
-  a report or measure improvement.
-- **What:** Langfuse's OpenAI drop-in plus two `@observe` steps. One trace per report, tagged by
-  client: `generate-report` → section steps → each model call with prompt, output, tokens, cost.
-- **Optional:** no keys, no tracing. The run still completes (tested).
-- **Production:** traces hold client data. Synthetic here, so Langfuse Cloud is fine. For a real
-  firm, self-host in their Azure tenant or mask personal data, and tag each trace with the release
-  that produced it.
+## D-004 · Tracing with Langfuse (#8)
+One trace per report: every step and model call, with its input, output, cost and latency, tagged by
+client. Optional: without keys the pipeline runs the same.
 
-## D-005 · Eval v0: "correct" written down as code checks
-- **Why:** the baseline reports look plausible. Without a scorecard there is no way to prove a fix
-  worked, or that it broke nothing else.
-- **What:** 6 critical checks in plain Python, no model calls, so free and the same answer every
-  run. Langfuse experiments run them and keep the history.
-  - Generic, any client including held-out: risk warning and FCA line word for word once, no
-    unfilled `<<slots>>`.
-  - Against a hand-written answer key per client: the right sections, exactly the accounts in
-    scope in the table, no figure outside the approved list.
-- **Invented figures:** checked against figures a person approved, since fee and CGT figures are
-  set by a person anyway (fde_notes). Keyword rules were too brittle.
-- **Left out on purpose:** a "must not contain" word list only catches what you predicted.
-  Irrelevant files get fixed at ingestion, irrelevant content goes to an LLM judge later.
-  Quality checks (repetition, structure) wait until the pipeline outputs JSON.
-- **Gap:** clients without an answer key only get the generic checks. An LLM judge for
-  groundedness and relevance closes that later.
+## D-005 · Write "correct" down as code (#10)
+Plain Python checks, no model calls, so free and repeatable: generic checks (mandatory wording, no
+unfilled slots) plus an answer key per client (sections, accounts, figures).
+**Trade-off:** a client with no answer key only gets the generic checks.
 
-## D-006 · v1: instructions out of the data, into versioned prompts
-- **Why:** every call got every file as one user message, rules included. Engineer notes, the
-  spec and a market update full of unrelated figures reached the model as if they were client
-  facts, and the prompts were vague (one asked for a "best approximate estimate" of the tax).
-- **What:** rules as the system message; only client files sent (skip list in config, unknown
-  files still read); rules from the notes and spec rewritten as prompts; one commit per prompt;
-  the risk warning made static text. Prompts describe only their own output: quoting the text
-  around a slot made the model repeat it.
-- **Result** (`evals/results/v1.md`): accounts in scope 1/4 → 4/4. Invented tax and fee figures
-  gone, flagged as `[TO CONFIRM: ...]`. Cost -35%, time -39%.
-- **What prompting did not fix:** each section is still a separate call that decides the facts
-  on its own. So the model invents amounts where the sources give none (an "equal split" became
-  £20,000 each), and sections disagree: one report's table used the newer value, its
-  recommendation the older one. That is the case for v2: extract the facts once, as structured
-  JSON, and write every section from them.
+## D-006 · v1: rules out of the data, into versioned prompts (#25)
+Only client files reach the model. The spec and the engineer notes are written for whoever
+configures the report, so their rules became config instead of model input. Fixed wording is
+template text, never generated.
+**Limit:** each section still decided the facts on its own, so sections could disagree.
 
-## D-007 · Model: gpt-4o-mini → gpt-6.1-sol
-- **Why:** what is left is judgement (which value is newer, what is contingent, what was never
-  stated). A stronger reasoning model handles that better, and the next step adds a structured
-  extraction that depends on it.
-- **How it stays fair:** the model is config (`OPENAI_MODEL`), not code. The v1 prompts are run
-  once on the new model before anything else changes, so the model's effect and v2's effect are
-  measured separately. Cost and time are read from Langfuse on every run.
+## D-007 · The model is config (#25)
+`OPENAI_MODEL`, not code. The switch to a stronger model was measured separately from the code
+changes, because what was left was judgement (which value is newer, what is uncertain).
+
+## D-008 · v2: the model proposes, code verifies (#26)
+One call extracts the facts as structured output. Code checks them against the database and the
+client's files, corrects or removes what it cannot trust, and logs each change as a review note.
+The tax gate and the holdings table are code; the writers read only the verified facts. The facts
+and review notes are saved with each report for audit.
+**Trade-offs:** slower, because extraction runs first; writers only know what the facts give them;
+values are checked by number, not by citation.
+
+## D-009 · Workflow, not an agent
+The task is the same every time, so a fixed flow: predictable, cheaper and auditable. The model
+makes only the judgement calls. A loop or tools only where the eval shows a fixed step failing.
+
+## D-010 · Eval v1: check for what is missing (#26)
+A new check that every key amount appears. It found a gap in v2 (one client's source of funds was
+never stated), fixed with one generic prompt line (`v2.1`). Eval versions are kept side by side.
+
+## D-011 · Prove it holds (#28, #31)
+Three repeat runs on all clients, then a synthetic held-out client written after the freeze: answer
+key first, one run, no tuning.
+**Limit:** one client I wrote is evidence, not proof.
+
+## D-012 · Scope
+The time box went to the agent flow and its evaluation, not software hardening. Retries, typed
+ingestion, validation before writing and a failure policy are deferred (#18 to #21). Unit tests run
+in CI on every pull request; the eval runs on demand.
 
 ---
 
 ## Taking it further
-*To be completed at the end.*
+- **Next:** repeat runs as a standard metric; an LLM groundedness judge for clients with no answer
+  key, calibrated on human labels; a synthetic client generator; citations in the facts; reading
+  the statement images; a cheaper writer model if the eval allows it.
+- **More agentic:** one bounded retry where review notes go back to the extractor; runtime checks
+  that regenerate a failing section once; the adviser approves the facts before the report is
+  written.
+- **Production:** a DPIA, risk assessment and adviser sign-off, with facts and review notes as the
+  audit record; prompt changes gated by the eval in CI; personal data masked in traces and UK or EU
+  data residency; Key Vault for secrets, Postgres for records, a queue and workers for volume;
+  dashboards and online evals, with every adviser correction becoming an eval case.
