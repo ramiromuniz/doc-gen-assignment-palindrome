@@ -1,49 +1,127 @@
-# doc-gen-assignment
+# Advice report generator
 
-A small config-driven pipeline that turns a client's source material into an advice report. Start
-with `PROJECT_GUIDANCE.md`; it describes the exercise.
+This pipeline writes a client advice report from the client's files: a database extract, meeting
+notes, a report request and statements. An adviser reviews and signs the report before it goes to
+the client, so it must be correct and every figure must be traceable to a source.
 
-## Setup
+The starting pipeline produced reports that read well but were not reliably correct: it included
+accounts that were out of scope, counted joint accounts twice, used old values and invented
+figures. This version fixes that, and an evaluation shows it.
+
+The task is described in `PROJECT_GUIDANCE.md`. The decisions, and why they were made, are in
+`DECISIONS.md`.
+
+## Results at a glance
+
+Seven checks per report, four clients (28 checks). Full details in
+[`evals/results/summary.md`](evals/results/summary.md).
+
+| Version | What changed | Checks passed | Cost for 4 reports |
+|---|---|---|---|
+| baseline | The pipeline as given | 20/28 | $0.011 |
+| v1 | Rules moved into versioned prompts, only client files reach the model | 23/28 (gpt-4o-mini), 28/28 (gpt-6.1-sol) | $0.007, $0.146 |
+| v2.1 | Facts decided once and checked in code, every section written from them | 28/28 in 3 out of 3 runs | $0.112 |
+
+## How it works
+
+The model proposes, code verifies, and the report is written from the verified facts.
+
+1. **Read the client's files.** Notes meant for engineers and general market material are
+   skipped (listed in the config), so only client data reaches the model.
+2. **Extract the facts, once.** One model call returns the facts of the case in a fixed format:
+   the accounts in scope and their values, whether investments are being sold, the actions, the
+   charges, and what a person still has to confirm.
+3. **Verify the facts in code.** Every account is checked against the client database (it
+   exists, it is open, a joint account is counted once). Every value and amount must appear in the
+   client's files. What can be corrected is corrected, the rest is removed, and each change is
+   recorded as a review note for the adviser.
+4. **Write the report.** Code decides which sections apply and builds the holdings table. The
+   model writes the text sections, reading only the verified facts, so the table and the text
+   always agree. Fixed wording (the regulatory line, the risk warning) is never generated.
+5. **Save for review.** The report is saved with the facts and the review notes next to it, and
+   every step is traced in Langfuse.
+
+Figures a person must finalise (fees, tax) are never invented: they appear as `[TO CONFIRM: ...]`.
+
+## Run it
+
+You need [uv](https://docs.astral.sh/uv/) and an OpenAI key.
 
 ```bash
-# clone your fork, then:
-cp .env.example .env          # put your OpenAI key in .env
-uv sync                       # or: pip install -e .
+cp .env.example .env              # add your OpenAI key
+uv sync --extra dev               # install, including the test tools
 ```
 
-## Run
+**One client** (about 30 seconds, a few pence):
 
 ```bash
 uv run python -m agent_pipeline.generate --client client_01_clean
-# report is written to outputs/client_01_clean.md - This will run for client_01, we would recommend reviewing data/code before running on other clients.
 ```
 
-Available clients live under `data/`:
+The report and its facts are written to `outputs/client_01_clean.md` and
+`outputs/client_01_clean.facts.json`.
 
-- `client_01_clean`
-- `client_02_medium`
-- `client_03_hard`
-- `client_04_stretch` (large and messy on purpose; a deliberate stretch)
+**Only the facts** (one model call, to see what was decided and what code corrected):
 
-## How it fits together
-
-```
-config/template_config.json          the report definition: sections, prompts, inclusion rules
-        │
-        ▼
-src/agent_pipeline/generate.py       reads the client's files, then for each section decides
-        │                            inclusion and fills its prompts from the client's data
-        ▼
-src/document_formatter/formatting.py assembles the sections into the final .md document
-        │
-        ▼
-outputs/<client>.md
+```bash
+uv run python -m agent_pipeline.generate --client client_04_stretch --facts-only
 ```
 
-## The pipeline is deliberately minimal
+**A new client:** put its files in a folder and point to it.
 
-What you are given is the smallest setup that runs end to end. It works, but it is naive: one model
-call per section, every file in the client folder dumped into every prompt whether or not it is
-relevant, a single model, and no tools. Improving it is part of the task; weigh speed, cost, and
-effectiveness (see `PROJECT_GUIDANCE.md`). Most of your work will be in
-`config/template_config.json`; the pipeline code is yours to improve too.
+```bash
+uv run python -m agent_pipeline.generate --client <folder name> --data-dir <parent folder>
+```
+
+Use `--output-dir` to choose where reports are written, and `--help` for all options.
+
+### Score the reports
+
+The checks are plain Python with no model calls, so scoring is free and gives the same result
+every time.
+
+```bash
+uv run python -m evals.run --reports outputs/v2.1
+```
+
+It prints one row per client and one column per check, with the reason for every fail, and saves
+the table to `evals/results/`.
+
+### Run the tests
+
+```bash
+uv run pytest
+```
+
+The tests never call a model. They run on every pull request (GitHub Actions).
+
+### Tracing is optional
+
+With Langfuse keys in `.env`, every report is traced: each step, model call, cost and latency,
+tagged with the client. Without keys the pipeline runs the same. Langfuse then prints
+`Authentication error: Langfuse client initialized without public_key`, which is expected and
+can be ignored.
+
+## Run an earlier version
+
+Each version is a git tag: `baseline`, `v1`, `v2`, `v2.1`.
+
+```bash
+git checkout v1                   # the code as it was at v1
+git checkout main                 # back to the latest
+```
+
+The saved reports from every version are in `outputs/<version>/`.
+
+## Where things are
+
+| Folder | What is in it |
+|---|---|
+| `config/template_config.json` | The report: sections, fixed wording, and every prompt, versioned in git |
+| `src/agent_pipeline/` | The pipeline: `generate.py` (the steps), `extract.py`, `verify.py`, `render.py` |
+| `src/document_formatter/` | Reads the source files and assembles the final document |
+| `data/` | The four clients' files |
+| `evals/` | The checks (`checks.py`), the runner (`run.py`), the answer keys (`expected/`) and the results (`results/`) |
+| `outputs/` | The reports from every version |
+| `tests/` | Unit tests |
+| `DECISIONS.md` | Every decision, the alternatives and the trade-offs |
